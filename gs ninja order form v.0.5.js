@@ -79,7 +79,7 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        const quotes = await wixWindow.getBuilderQuotes();
+        const quotes = await wixWindow.builderFunctions.getBuilderQuotes();
         
         // Create and show the order history modal
         const modal = document.createElement('div');
@@ -1102,9 +1102,9 @@ async function confirmSaveQuote() {
     };
 
     try {
-        // Call the global function that was set up by the page code
-        if (typeof wixWindow !== 'undefined' && wixWindow.saveBuilderQuote) {
-            const result = await wixWindow.saveBuilderQuote(quoteData);
+        // Use the new namespace
+        if (typeof wixWindow !== 'undefined' && wixWindow.builderFunctions) {
+            const result = await wixWindow.builderFunctions.saveBuilderQuote(quoteData);
             if (result.success) {
                 showNotification('Quote saved successfully!', 'success');
                 updateLastSavedState();
@@ -1113,7 +1113,7 @@ async function confirmSaveQuote() {
                 throw new Error('Failed to save quote');
             }
         } else {
-            throw new Error('Save function not available');
+            throw new Error('Builder functions not available');
         }
     } catch (error) {
         showNotification('Error saving quote: ' + error.message, 'error');
@@ -1502,9 +1502,10 @@ function calculateTotalInstallationCost() {
     
     return total;
 }
+
 async function loadQuote(quoteId) {
     try {
-        const quote = await wixWindow.getBuilderQuoteById(quoteId);
+        const quote = await wixWindow.builderFunctions.getBuilderQuoteById(quoteId);
         
         // Update rooms array and localStorage
         rooms = quote.rooms.map(room => room.name);
