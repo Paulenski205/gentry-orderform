@@ -77,9 +77,54 @@ function showCreateQuote() {
     console.log('Created new quote, reset to Room 1');
 }
 
-function showOrderHistory() {
-    // TODO: Implement Order History Page
-    alert('Order History Page Coming Soon!');
+async function showOrderHistory() {
+    try {
+        const quotes = await window.backendFunctions.getBuilderQuotes();
+        
+        // Create and show the order history modal
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.id = 'orderHistoryModal';
+        
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Order History</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="quotes-list">
+                        ${quotes.map(quote => `
+                            <div class="quote-item" data-quote-id="${quote.id}">
+                                <div class="quote-header">
+                                    <span class="project-name">${quote.projectName}</span>
+                                    <span class="quote-date">${new Date(quote.timestamp).toLocaleDateString()}</span>
+                                </div>
+                                <div class="quote-details">
+                                    <div>Quote ID: ${quote.id}</div>
+                                    <div>Total: ${formatMoney(quote.finalTotal)}</div>
+                                    <div>Status: ${quote.status || 'Pending'}</div>
+                                </div>
+                                <button onclick="loadQuote('${quote.id}')">Load Quote</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        modal.style.display = 'block';
+
+        // Add close button functionality
+        const closeBtn = modal.querySelector('.close');
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+            modal.remove();
+        };
+    } catch (error) {
+        showNotification('Error loading order history: ' + error.message, 'error');
+    }
 }
 
 function goToMainMenu() {
@@ -998,32 +1043,84 @@ function setSelectedOptions(options) {
 
 // Save and Back Button Handling
 async function saveQuote() {
+    const modal = document.getElementById('saveQuoteModal');
+    if (!modal) {
+        // Create the modal if it doesn't exist
+        const saveQuoteModal = document.createElement('div');
+        saveQuoteModal.id = 'saveQuoteModal';
+        saveQuoteModal.className = 'modal';
+        saveQuoteModal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Save Quote</h3>
+                    <span class="close" onclick="cancelSaveQuote()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="project-name">Project Name:</label>
+                        <input type="text" id="project-name" required>
+                    </div>
+                    <div class="confirmation-buttons">
+                        <button class="save-button" onclick="confirmSaveQuote()">Save</button>
+                        <button class="cancel" onclick="cancelSaveQuote()">Cancel</button>
+                    </div>
+                </div>
+            </div>`;
+        document.body.appendChild(saveQuoteModal);
+    }
+    modal.style.display = 'block';
+}
+
+async function confirmSaveQuote() {
+    const projectName = document.getElementById('project-name').value.trim();
+    
+    if (!projectName) {
+        showNotification('Please enter a project name', 'error');
+        return;
+    }
+
+    // Gather all quote data
     const quoteData = {
         id: document.getElementById('quote-id')?.value || generateQuoteId(),
-        rooms: rooms.map(room => ({
-            name: room,
-            data: JSON.parse(localStorage.getItem(`room-${room.toLowerCase().replace(/\s+/g, '-')}`))
-        })),
-        timestamp: new Date().toISOString()
+        projectName: projectName,
+        rooms: rooms.map(room => {
+            const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
+            const roomData = JSON.parse(localStorage.getItem(roomId));
+            return {
+                name: room,
+                data: roomData
+            };
+        }),
+        projectTotal: calculateProjectSubtotal(),
+        tax: calculateTax(),
+        taxType: document.getElementById('tax-type').value,
+        installationType: document.getElementById('installation-type').value,
+        installationCost: calculateTotalInstallationCost(),
+        installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
+        discount: parseFloat(document.getElementById('discount').value) || 0,
+        finalTotal: calculateFinalTotal()
     };
 
     try {
-        const response = await fetch('/backend/quotes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(quoteData)
-        });
-
-        if (response.ok) {
+        const result = await window.backendFunctions.saveBuilderQuote(quoteData);
+        if (result.success) {
             showNotification('Quote saved successfully!', 'success');
             updateLastSavedState();
+            cancelSaveQuote();
         } else {
             throw new Error('Failed to save quote');
         }
     } catch (error) {
         showNotification('Error saving quote: ' + error.message, 'error');
+    }
+}
+
+// New function to cancel save operation
+function cancelSaveQuote() {
+    const modal = document.getElementById('saveQuoteModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.getElementById('project-name').value = '';
     }
 }
 
@@ -1145,11 +1242,46 @@ document.addEventListener('DOMContentLoaded', function() {
     rooms = JSON.parse(localStorage.getItem('rooms')) || ['Room 1'];
     modal = document.getElementById('roomManageModal');
     closeBtn = document.querySelector('#roomManageModal .close');
-    currentRoomId = 'room-1'; // Initialize current room ID
+    currentRoomId = 'room-1';
 
     document.getElementById('welcome-container').style.display = 'block';
     document.getElementById('main-menu-container').style.display = 'none';
     document.getElementById('create-quote-container').style.display = 'none';
+
+    // Add the new styles
+    const newStyles = `
+        .project-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .quote-date {
+            color: #666;
+        }
+
+        .quote-details {
+            margin: 0.5rem 0;
+            font-size: 0.9em;
+        }
+
+        #project-name {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .quotes-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    `;
+
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = newStyles;
+    document.head.appendChild(styleSheet);
 
     if (closeBtn) {
         closeBtn.onclick = closeModal;
@@ -1163,13 +1295,13 @@ document.addEventListener('DOMContentLoaded', function() {
     updateLinearFootage();
     updateCostBreakdown();
 
-    // Add event listeners here, *inside* DOMContentLoaded
-const clearDataButton = document.getElementById('clear-data-button');
+    // Add event listeners
+    const clearDataButton = document.getElementById('clear-data-button');
     if (clearDataButton) {
         clearDataButton.addEventListener('click', showClearConfirmation);
     }
     document.getElementById('back-button')?.addEventListener('click', handleBack);
-    document.getElementById('save-quote')?.addEventListener('click', saveQuote);
+    document.getElementById('save-quote')?.addEventListener('click', saveQuote); // Add this line
     document.getElementById('tax-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-surcharge').addEventListener('input', updateCostBreakdown);
@@ -1364,4 +1496,61 @@ function calculateTotalInstallationCost() {
     }
     
     return total;
+}
+async function loadQuote(quoteId) {
+    try {
+        const quote = await window.backendFunctions.getBuilderQuoteById(quoteId);
+        
+        // Update rooms array and localStorage
+        rooms = quote.rooms.map(room => room.name);
+        localStorage.setItem('rooms', JSON.stringify(rooms));
+        
+        // Save room data to localStorage
+        quote.rooms.forEach(room => {
+            localStorage.setItem(
+                `room-${room.name.toLowerCase().replace(/\s+/g, '-')}`,
+                JSON.stringify(room.data)
+            );
+        });
+        
+        // Update current room ID
+        currentRoomId = 'room-1';
+        
+        // Update UI
+        document.getElementById('quote-id').value = quote.id;
+        document.getElementById('tax-type').value = quote.taxType;
+        document.getElementById('installation-type').value = quote.installationType;
+        document.getElementById('installation-surcharge').value = quote.installationSurcharge;
+        document.getElementById('discount').value = quote.discount;
+        
+        // Initialize room selector and load first room
+        initializeRoomSelector();
+        loadRoomData(currentRoomId);
+        
+        // Close the order history modal
+        const modal = document.getElementById('orderHistoryModal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.remove();
+        }
+        
+        // Show the quote form
+        showCreateQuote();
+        
+    } catch (error) {
+        showNotification('Error loading quote: ' + error.message, 'error');
+    }
+}
+function calculateTax() {
+    const taxType = document.getElementById('tax-type').value;
+    const projectSubtotal = calculateProjectSubtotal();
+    return taxType === 'AZ' ? projectSubtotal * 0.086 : 0;
+}
+
+function calculateFinalTotal() {
+    const projectSubtotal = calculateProjectSubtotal();
+    const tax = calculateTax();
+    const installationCost = calculateTotalInstallationCost();
+    const discount = parseFloat(document.getElementById('discount').value) || 0;
+    return projectSubtotal + tax + installationCost - discount;
 }
