@@ -1,0 +1,622 @@
+/* Base styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f7f7f7;
+}
+
+/* Welcome page */
+.welcome-container {
+    text-align: center;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.welcome-image {
+    width: 80%;
+    height: auto;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+}
+
+/* Button styles */
+.begin-button, .menu-button, .add-wall-button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.begin-button:hover, .menu-button:hover, .add-wall-button:hover {
+    background-color: #45a049;
+}
+
+.begin-button {
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+}
+
+.menu-button {
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    margin: 1rem;
+    width: 300px;
+}
+
+.manage-rooms-button {
+    background-color: #45a049; /* Example red color */
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.clear-data-button {
+    background-color: #f44336; /* Example red color */
+    color: white;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.add-wall-button.small {
+    padding: 2px 6px;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+/* Main menu */
+.main-menu-container {
+    text-align: center;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Quote Layout */
+.quote-layout {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 2rem;
+    padding: 2rem;
+}
+
+/* Main Content Area */
+.main-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+/* Room Selection and Management */
+.room-selector {
+    margin-bottom: 2rem;
+}
+
+.room-selector select {
+    width: 200px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.room-input {
+    margin-bottom: 1rem;
+}
+
+/* Wall Measurements */
+.wall-measurements, .measurements-section {
+    margin-bottom: 2rem;
+}
+
+.wall-inputs {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.wall-inputs .form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wall-inputs input {
+    width: 100px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#base-linear-foot, #upper-linear-foot {
+    margin-left: 1rem;
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* Options and Form Groups */
+.options-section {
+    background-color: #f9f9f9;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.options-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="number"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+/* Cost Breakdown */
+.cost-breakdown {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: fit-content;
+    position: sticky;
+    top: 2rem;
+}
+
+.breakdown-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.cost-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.cost-line:last-child {
+    border-bottom: none;
+}
+
+.amount {
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.subtotal {
+    border-top: 2px solid #333;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+
+.total {
+    border-top: 2px solid #333;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    font-weight: bold;
+}
+
+.total .amount {
+    background-color: #fff3cd;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Add-on Section */
+.addon-section {
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.wall-inputs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.wall-inputs .form-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wall-inputs input {
+    width: 100px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.measurements-section {
+    background-color: #f9f9f9;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.measurements-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#base-linear-foot, #upper-linear-foot {
+    font-size: 0.9em;
+    color: #666;
+    font-weight: normal;
+}
+
+
+.save-button, .back-button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.save-button {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.back-button {
+    background-color: #666;
+    color: white;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}
+
+/* Room Management */
+.room-list {
+    margin-bottom: 20px;
+}
+
+.room-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        padding: 5px;
+    }
+
+.room-item input[type="text"] {
+        padding: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    .room-item button {
+        padding: 5px 10px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .edit-room {
+        background-color: #4CAF50;
+        color: white;
+    }
+
+    .save-room {
+        background-color: #2196F3;
+        color: white;
+    }
+.room-item button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
+.delete-room {
+    color: #ff4444;
+    cursor: pointer;
+    padding: 5px 10px;
+    border: none;
+    background: none;
+}
+
+.delete-room:hover {
+    color: #cc0000;
+}
+
+.add-room-form {
+    display: flex;
+    gap: 10px;
+}
+
+.add-room-form input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Confirmation Modal */
+.confirmation-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.save-and-exit {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.discard {
+    background-color: #ff4444;
+    color: white;
+}
+
+.cancel {
+    background-color: #666;
+    color: white;
+}
+
+/* Status Messages */
+.submission-status {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-radius: 5px;
+}
+
+.success {
+    background-color: #dff0d8;
+    color: #3c763d;
+}
+
+.error {
+    background-color: #f2dede;
+    color: #a94442;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .quote-layout {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+@media (max-width: 992px) {
+    .options-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .quote-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .cost-breakdown {
+        position: static;
+        margin-top: 2rem;
+    }
+    
+    .welcome-image {
+        width: 100%;
+    }
+    
+    .menu-button {
+        width: 100%;
+    }
+}
+
+.additional-options-section {
+    background-color: #f9f9f9;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.additional-options-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.input-with-prefix {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.currency-prefix {
+    padding: 0.5rem;
+    background-color: #f0f0f0;
+    border-right: 1px solid #ddd;
+    color: #666;
+}
+
+.input-with-prefix input {
+    border: none;
+    padding: 0.5rem;
+    width: 100%;
+}
+
+.input-with-prefix input:focus {
+    outline: none;
+}
+/* Common styles for all numerical values and selections */
+.amount, 
+.selection-detail span:last-child {
+    font-family: Arial, sans-serif; 
+    min-width: 150px;
+    text-align: right;
+}
+
+.selection-detail {
+    font-size: 0.9em;
+    color: #666;
+    padding-left: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.selection-detail span:first-child {
+
+    font-family: Arial, sans-serif; /* Keep regular font for labels */
+}
+
+.cost-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Style for the total amount */
+.total .amount {
+    background-color: #fff3cd;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+/* Style for the subtotal line */
+.subtotal {
+    border-top: 2px solid #333;
+    margin-top: 1rem;
+    padding-top: 1rem;
+}
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 400px;
+    border-radius: 8px;
+}
+
+.confirmation-buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.confirmation-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.confirm-clear {
+    background-color: #f44336; /* Red */
+    color: white;
+}
+
+.cancel {
+    background-color: #666; /* Gray */
+    color: white;
+}
+

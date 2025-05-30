@@ -1,0 +1,341 @@
+ <!DOCTYPE html>
+<html>
+<head>
+    <title>Cabinetry Order Form</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <!-- Welcome page -->
+    <div class="welcome-container" id="welcome-container">
+        <img style="max-height:500px;" src="https://static.wixstatic.com/media/daaed2_ddd95b246f944d598ee05d08035961c2~mv2.png/v1/fill/w_1323,h_910,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/daaed2_ddd95b246f944d598ee05d08035961c2~mv2.png" 
+             alt="Cabinetry Design" 
+             class="welcome-image">
+        <h1>Welcome to the Cabinetry Order Form</h1>
+        <button class="begin-button" onclick="showMainMenu()">Begin</button>
+    </div>
+
+    <!-- Main menu -->
+    <div class="main-menu-container" id="main-menu-container" style="display: none;">
+        <h2>Select an Option</h2>
+        <button class="menu-button" onclick="showCreateQuote()">Create Quote</button>
+        <button class="menu-button" onclick="showOrderHistory()">Order History</button>
+    </div>
+
+    <!-- Create quote page -->
+    <div class="create-quote-container" id="create-quote-container" style="display: none;">
+        <div class="quote-layout">
+            <!-- Left Column - Main Content -->
+            <div class="main-content">
+                <div class="header">
+                    <h2>Create New Quote</h2>
+                    <button class="manage-rooms-button" id="manage-rooms-button">Manage Rooms</button>
+                    <button class="clear-data-button" id="clear-data-button">Clear All Data</button>
+                    <div id="quote-id"></div> <input type="hidden" id="room-name" name="room-name" value=""> </div>
+
+                <form id="quote-form">
+                    <div class="room-selector">
+                        <select id="room-selector">
+                            <option value="room1">Room 1</option>
+                        </select>
+                    </div>
+
+                    <div class="room-details">
+                       
+
+<!-- Base Measurements -->
+<div class="measurements-section">
+    <h3>Base <span id="base-linear-foot">Linear Foot: <span id="base-linear-foot-value">0</span></span></h3>
+    <div class="wall-inputs" id="base-walls">
+        <div class="form-group">
+            <label for="base-wall-a">Wall A:</label>
+            <input type="number" id="base-wall-a" name="base-wall-a" step="0.01" required>
+        </div>
+        <div class="form-group">
+            <label for="base-wall-b">Wall B:</label>
+            <input type="number" id="base-wall-b" name="base-wall-b" step="0.01">
+        </div>
+        <div class="form-group">
+            <label for="base-wall-c">Wall C:</label>
+            <input type="number" id="base-wall-c" name="base-wall-c" step="0.01">
+        </div>
+        <div class="form-group">
+            <label for="base-wall-d">Wall D:</label>
+            <input type="number" id="base-wall-d" name="base-wall-d" step="0.01">
+        </div>
+    </div>
+</div>
+
+<!-- Upper Measurements -->
+<div class="measurements-section">
+    <h3>Upper <span id="upper-linear-foot">Linear Foot: <span id="upper-linear-foot-value">0</span></span></h3>
+    <div class="wall-inputs" id="upper-walls">
+        <div class="form-group">
+            <label for="upper-wall-a">Wall A:</label>
+            <input type="number" id="upper-wall-a" name="upper-wall-a" step="0.01" required>
+        </div>
+        <div class="form-group">
+            <label for="upper-wall-b">Wall B:</label>
+            <input type="number" id="upper-wall-b" name="upper-wall-b" step="0.01">
+        </div>
+        <div class="form-group">
+            <label for="upper-wall-c">Wall C:</label>
+            <input type="number" id="upper-wall-c" name="upper-wall-c" step="0.01">
+        </div>
+        <div class="form-group">
+            <label for="upper-wall-d">Wall D:</label>
+            <input type="number" id="upper-wall-d" name="upper-wall-d" step="0.01">
+        </div>
+    </div>
+</div>
+
+                        <!-- Options Section -->
+                        <div class="options-section">
+                            <h3>Build Options</h3>
+                            <div class="options-form">
+                                <!-- Box Construction -->
+                                <div class="form-group">
+                                    <label for="box-construction">Box Construction:</label>
+                                    <select id="box-construction" name="box-construction">
+                                        <option value=""> - </option>
+                                        <option value="Inset">Inset</option>
+                                        <option value="Overlay">Overlay</option>
+                                        <option value="Framed">Framed</option>
+                                    </select>
+                                </div>
+
+                                <!-- Box Material -->
+                                <div class="form-group">
+                                    <label for="box-material">Box Material:</label>
+                                    <select id="box-material" name="box-material">
+                                        <option value=""> - </option>
+                                        <option value="MDF">MDF</option>
+                                        <option value="White Birch">White Birch</option>
+                                        <option value="White Rift Oak">White Rift Oak</option>
+                                        <option value="Hickory">Hickory</option>
+                                        <option value="Cherry">Cherry</option>
+                                        <option value="Mahogany">Mahogany</option>
+                                        <option value="Cedar">Cedar</option>
+                                        <option value="White Oak">White Oak</option>
+                                    </select>
+                                </div>
+
+                                <!-- Door Material -->
+                                <div class="form-group">
+                                    <label for="door-material">Door Material:</label>
+                                    <select id="door-material" name="door-material">
+                                        <option value=""> - </option>
+                                        <option value="Maple">Maple</option>
+                                        <option value="White Rift Oak">White Rift Oak</option>
+                                        <option value="Hickory">Hickory</option>
+                                        <option value="Cherry">Cherry</option>
+                                        <option value="Mahogany">Mahogany</option>
+                                        <option value="Cedar">Cedar</option>
+                                        <option value="White Oak">White Oak</option>
+                                        <option value="Walnut">Walnut</option>
+                                        <option value="Laminate">Laminate</option>
+                                    </select>
+                                </div>
+                                <!-- Door Style -->
+                                <div class="form-group">
+                                    <label for="door-style">Door Style:</label>
+                                    <select id="door-style" name="door-style">
+                                        <option value=""> - </option>
+                                        <option value="Basic Shaker">Basic Shaker</option>
+                                        <option value="Flat Panel">Flat Panel</option>
+                                        <option value="Shaker w/ Moulding">Shaker w/ Moulding</option>
+                                        <option value="Raised Shaker">Raised Shaker</option>
+                                        <option value="Flat Panel High Gloss Laminate">Flat Panel High Gloss Laminate</option>
+                                    </select>
+                                </div>
+
+                                <!-- Finish -->
+                                <div class="form-group">
+                                    <label for="finish">Finish:</label>
+                                    <select id="finish" name="finish">
+                                        <option value=""> - </option>
+                                        <option value="Basic Stain">Basic Stain</option>
+                                        <option value="Basic Paint">Basic Paint</option>
+                                        <option value="Glaze">Glaze</option>
+                                        <option value="Color Match Stain">Color Match Stain</option>
+                                        <option value="Color Match Paint">Color Match Paint</option>
+                                        <option value="Distressed">Distressed</option>
+                                        <option value="Laminate">Laminate</option>
+                                    </select>
+                                </div>
+
+                                <!-- Interior Finish -->
+                                <div class="form-group">
+                                    <label for="interior-finish">Interior Finish:</label>
+                                    <select id="interior-finish" name="interior-finish">
+                                        <option value=""> - </option>
+                                        <option value="White Birch">White Birch</option>
+                                        <option value="Stain">Stain</option>
+                                        <option value="Paint">Paint</option>
+                                        <option value="Glaze">Glaze</option>
+                                        <option value="Distressed">Distressed</option>
+                                        <option value="Laminate">Laminate</option>
+                                        <option value="MDF">MDF</option>
+                                    </select>
+                                </div>
+
+                                <!-- Drawer Box -->
+                                <div class="form-group">
+                                    <label for="drawer-box">Drawer Box:</label>
+                                    <select id="drawer-box" name="drawer-box">
+                                        <option value=""> - </option>
+                                        <option value="Dovetail">Dovetail</option>
+                                        <option value="Rabbet">Rabbet</option>
+                                    </select>
+                                </div>
+
+                                <!-- Drawer Style -->
+                                <div class="form-group">
+                                    <label for="drawer-style">Drawer Style:</label>
+                                    <select id="drawer-style" name="drawer-style">
+                                        <option value=""> - </option>
+                                        <option value="Basic Shaker">Basic Shaker</option>
+                                        <option value="Flat Panel">Flat Panel</option>
+                                        <option value="Shaker w/ Moulding">Shaker w/ Moulding</option>
+                                        <option value="Raised Shaker">Raised Shaker</option>
+                                        <option value="Flat Panel High Gloss Laminate">Flat Panel High Gloss Laminate</option>
+                                    </select>
+                                </div>
+
+                                <!-- Hardware -->
+                                <div class="form-group">
+                                    <label for="hardware">Hardware:</label>
+                                    <input type="text" id="hardware" name="hardware" placeholder="Optional">
+                                </div>
+
+                                <!-- Edgeband -->
+                                <div class="form-group">
+                                    <label for="edgeband">Edgeband:</label>
+                                    <input type="text" id="edgeband" name="edgeband" placeholder="Optional">
+                                </div>
+                            </div>
+                        </div>
+
+<!-- Additional Options Section -->
+<div class="additional-options-section">
+    <h3>Order Options</h3>
+    <div class="additional-options-form">
+        <!-- Tax Options -->
+        <div class="form-group">
+            <label for="tax-type">Taxes:</label>
+            <select id="tax-type" name="tax-type">
+                <option value="AZ">AZ (8.6%)</option>
+                <option value="EXEMPT">Exempt (0.00%)</option>
+            </select>
+        </div>
+
+        <!-- Installation Options -->
+        <div class="form-group">
+            <label for="installation-type">Installation Type:</label>
+            <select id="installation-type" name="installation-type">
+                <option value="professional">Professional Install</option>
+                <option value="self">Self-Install (0.00)</option>
+            </select>
+        </div>
+
+        <!-- Installation Surcharge -->
+        <div class="form-group">
+            <label for="installation-surcharge">Installation Surcharge:</label>
+            <div class="input-with-prefix">
+                <span class="currency-prefix">$</span>
+                <input type="number" 
+                       id="installation-surcharge" 
+                       name="installation-surcharge" 
+                       step="0.01" 
+                       value="0.00">
+            </div>
+        </div>
+
+        <!-- Discount -->
+        <div class="form-group">
+            <label for="discount">Discount:</label>
+            <div class="input-with-prefix">
+                <span class="currency-prefix">$</span>
+                <input type="number" 
+                       id="discount" 
+                       name="discount" 
+                       step="0.01" 
+                       value="0.00">
+            </div>
+        </div>
+    </div>
+</div>
+
+                        <!-- Add-on section -->
+                        <div class="addon-section">
+                            <h3>Add-ons</h3>
+                            <button type="button" onclick="addAddOn()">Add Add-on</button>
+                            <div id="add-on-list"></div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <button type="button" class="save-button" id="save-quote">Save</button>
+                            <button type="button" class="back-button" id="back-button">Back</button>
+<button id="export-pdf" onclick="exportToPDF()">Export to PDF</button>
+                        </div>
+                    </div>
+                </form>
+                <div id="submission-status" class="submission-status" style="display: none;"></div>
+            </div>
+
+
+            <!-- Right Column - Cost Breakdown -->
+            <div class="cost-breakdown">
+                <h3>Project Total</h3>
+                <div class="breakdown-content">
+                    <div id="cost-breakdown-list">
+                        <!-- Cost breakdown items will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+     <!-- Room Management Modal -->
+    <div id="roomManageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Manage Rooms</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="room-list"></div>
+                <button onclick="addNewRoom()">Add Room</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Back Confirmation Modal -->
+    <div id="backConfirmationModal" class="modal">
+        <div class="modal-content">
+            <h3>Save Changes?</h3>
+            <p>Do you want to save your changes before going back?</p>
+            <div class="confirmation-buttons">
+                <button class="save-and-exit" onclick="saveAndExit()">Save & Exit</button>
+                <button class="discard" onclick="discardAndExit()">Discard</button>
+                <button class="cancel" onclick="cancelExit()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+<div id="clearConfirmationModal" class="modal">
+    <div class="modal-content">
+        <h3>Clear All Data?</h3>
+        <p>Are you sure you want to clear all data? This action cannot be undone.</p>
+        <div class="confirmation-buttons">
+            <button class="confirm-clear" onclick="confirmClearData()">Clear Data</button>
+            <button class="cancel" onclick="cancelClearData()">Cancel</button>
+        </div>
+    </div>
+</div>
+ <script src="script.js" defer></script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script> </body>
+</html>
