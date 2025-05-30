@@ -1,7 +1,4 @@
 // Main JavaScript File
-if (typeof wixWindow === 'undefined') {
-    console.error('wixWindow is not defined. Make sure this code is running in the Wix environment.');
-}
 
 // Constants and Initial Setup
 const TAX_RATE = 0.086; // 8.6%
@@ -82,7 +79,10 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        const quotes = await window.backendFunctions.getBuilderQuotes();
+        if (!wixWindow.publicApi) {
+            throw new Error('Builder functions not initialized');
+        }
+        const quotes = await wixWindow.publicApi.getBuilderQuotes();
         
         // Create and show the order history modal
         const modal = document.createElement('div');
@@ -1116,16 +1116,16 @@ async function confirmSaveQuote() {
             finalTotal
         };
 
-        // Validate that we have access to the backend functions
-        if (typeof wixWindow === 'undefined' || !wixWindow.builderFunctions) {
-            throw new Error('Backend functions not available');
+        // Check for wixWindow.publicApi
+        if (typeof wixWindow === 'undefined' || !wixWindow.publicApi) {
+            throw new Error('Builder functions not initialized');
         }
 
-        // Save the quote
-        const result = await wixWindow.builderFunctions.saveBuilderQuote(quoteData);
+        // Save the quote using wixWindow.publicApi
+        const result = await wixWindow.publicApi.saveBuilderQuote(quoteData);
         
         if (!result || !result.success) {
-            throw new Error('Failed to save quote');
+            throw new Error(result.error || 'Failed to save quote');
         }
 
         // Success handling
@@ -1133,9 +1133,15 @@ async function confirmSaveQuote() {
         updateLastSavedState();
         cancelSaveQuote();
 
-        // Optional: Update quote ID if it was generated
-        if (!document.getElementById('quote-id').value) {
-            document.getElementById('quote-id').value = quoteData.id;
+        // Update quote ID if it was generated
+        if (!document.getElementById('quote-id').value && result.quoteId) {
+            document.getElementById('quote-id').value = result.quoteId;
+        }
+
+        // Optional: Update timestamp if provided
+        if (result.timestamp) {
+            // You might want to store or display the timestamp somewhere
+            console.log('Quote saved at:', new Date(result.timestamp).toLocaleString());
         }
 
     } catch (error) {
@@ -1620,7 +1626,10 @@ function calculateTotalInstallationCost() {
 }
 async function loadQuote(quoteId) {
     try {
-        const quote = await window.backendFunctions.getBuilderQuoteById(quoteId);
+        if (!wixWindow.publicApi) {
+            throw new Error('Builder functions not initialized');
+        }
+        const quote = await wixWindow.publicApi.getBuilderQuoteById(quoteId);
         
         // Update rooms array and localStorage
         rooms = quote.rooms.map(room => room.name);
