@@ -772,3 +772,26 @@ h1 {
 #saveQuoteModal.loading {
     cursor: wait;
 }
+
+.save-button {
+    position: relative;
+    min-width: 80px;
+}
+
+.save-button:disabled::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin: -8px 0 0 -8px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
