@@ -1,4 +1,5 @@
 // Main JavaScript File
+import { saveQuote, getQuotes, getQuoteById } from '@velo/backend';
 
 // Constants and Initial Setup
 const TAX_RATE = 0.086; // 8.6%
@@ -1346,51 +1347,49 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.confirmSaveQuote = async function() {
-        const projectName = document.getElementById('project-name').value.trim();
-        
-        if (!projectName) {
-            showNotification('Please enter a project name', 'error');
-            return;
-        }
+    const projectName = document.getElementById('project-name').value.trim();
+    
+    if (!projectName) {
+        showNotification('Please enter a project name', 'error');
+        return;
+    }
 
-        const quoteData = {
-            id: document.getElementById('quote-id')?.value || generateQuoteId(),
-            projectName: projectName,
-            rooms: rooms.map(room => {
-                const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
-                const roomData = JSON.parse(localStorage.getItem(roomId));
-                return {
-                    name: room,
-                    data: roomData
-                };
-            }),
-            projectTotal: calculateProjectSubtotal(),
-            tax: calculateTax(),
-            taxType: document.getElementById('tax-type').value,
-            installationType: document.getElementById('installation-type').value,
-            installationCost: calculateTotalInstallationCost(),
-            installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
-            discount: parseFloat(document.getElementById('discount').value) || 0,
-            finalTotal: calculateFinalTotal()
-        };
-
-        try {
-            if (typeof wixWindow !== 'undefined' && wixWindow.builderFunctions) {
-                const result = await wixWindow.builderFunctions.saveBuilderQuote(quoteData);
-                if (result.success) {
-                    showNotification('Quote saved successfully!', 'success');
-                    updateLastSavedState();
-                    cancelSaveQuote();
-                } else {
-                    throw new Error('Failed to save quote');
-                }
-            } else {
-                throw new Error('Builder functions not available');
-            }
-        } catch (error) {
-            showNotification('Error saving quote: ' + error.message, 'error');
-        }
+    const quoteData = {
+        id: document.getElementById('quote-id')?.value || generateQuoteId(),
+        projectName: projectName,
+        rooms: rooms.map(room => {
+            const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
+            const roomData = JSON.parse(localStorage.getItem(roomId));
+            return {
+                name: room,
+                data: roomData
+            };
+        }),
+        projectTotal: calculateProjectSubtotal(),
+        tax: calculateTax(),
+        taxType: document.getElementById('tax-type').value,
+        installationType: document.getElementById('installation-type').value,
+        installationCost: calculateTotalInstallationCost(),
+        installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
+        discount: parseFloat(document.getElementById('discount').value) || 0,
+        finalTotal: calculateFinalTotal()
     };
+
+    try {
+        // Use the exported saveQuote function directly
+        const result = await saveQuote(quoteData);
+        if (result.success) {
+            showNotification('Quote saved successfully!', 'success');
+            updateLastSavedState();
+            cancelSaveQuote();
+        } else {
+            throw new Error('Failed to save quote');
+        }
+    } catch (error) {
+        showNotification('Error saving quote: ' + error.message, 'error');
+    }
+};
+
 
     if (closeBtn) {
         closeBtn.onclick = closeModal;
