@@ -1,5 +1,4 @@
 // Main JavaScript File
-import { saveQuote, getQuotes, getQuoteById } from '@velo/backend';
 
 // Constants and Initial Setup
 const TAX_RATE = 0.086; // 8.6%
@@ -80,7 +79,10 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        const quotes = await getQuotes();
+        if (typeof window.$w?.page?.getQuotes !== 'function') {
+            throw new Error('Get quotes function not available');
+        }
+        const quotes = await window.$w.page.getQuotes();
         
         // Create and show the order history modal
         const modal = document.createElement('div');
@@ -1065,6 +1067,11 @@ async function confirmSaveQuote() {
             throw new Error('Please enter a project name');
         }
 
+        // Check if save function is available
+        if (typeof window.$w?.page?.saveQuote !== 'function') {
+            throw new Error('Save function not available');
+        }
+
         // Validate that there's at least one room with measurements
         const hasValidRooms = rooms.some(room => {
             const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
@@ -1114,8 +1121,8 @@ async function confirmSaveQuote() {
             finalTotal
         };
 
-        // Save the quote using the exported function
-        const result = await saveQuote(quoteData);
+        // Save the quote using the page's exported function
+        const result = await window.$w.page.saveQuote(quoteData);
         
         if (!result || !result.success) {
             throw new Error(result.error || 'Failed to save quote');
@@ -1130,6 +1137,13 @@ async function confirmSaveQuote() {
         if (!document.getElementById('quote-id').value && result.quoteId) {
             document.getElementById('quote-id').value = result.quoteId;
         }
+
+        // Optional: Log success details
+        console.log('Quote saved successfully:', {
+            id: quoteData.id,
+            projectName: quoteData.projectName,
+            timestamp: quoteData.timestamp
+        });
 
     } catch (error) {
         console.error('Save quote error:', error);
@@ -1611,7 +1625,10 @@ function calculateTotalInstallationCost() {
 }
 async function loadQuote(quoteId) {
     try {
-        const quote = await getQuoteById(quoteId);
+        if (typeof window.$w?.page?.getQuoteById !== 'function') {
+            throw new Error('Get quote function not available');
+        }
+        const quote = await window.$w.page.getQuoteById(quoteId);
         
         if (!quote) {
             throw new Error('Quote not found');
@@ -1670,18 +1687,6 @@ function calculateFinalTotal() {
     const installationCost = calculateTotalInstallationCost();
     const discount = parseFloat(document.getElementById('discount').value) || 0;
     return projectSubtotal + tax + installationCost - discount;
-}
-
-function calculateProjectSubtotal() {
-    let total = 0;
-    rooms.forEach((roomName, index) => {
-        const roomId = `room-${index + 1}`;
-        const roomData = JSON.parse(localStorage.getItem(roomId)) || {};
-        const linearFootage = calculateRoomLinearFootage(roomData);
-        const calculator = new CabinetCalculator(linearFootage);
-        total += calculator.calculateTotalCost(roomData?.options || {});
-    });
-    return total;
 }
 
 function setLoadingState(isLoading) {
