@@ -79,7 +79,7 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        const quotes = await window.backendFunctions.getBuilderQuotes();
+        const quotes = await wixWindow.getBuilderQuotes();
         
         // Create and show the order history modal
         const modal = document.createElement('div');
@@ -1504,7 +1504,7 @@ function calculateTotalInstallationCost() {
 }
 async function loadQuote(quoteId) {
     try {
-        const quote = await window.backendFunctions.getBuilderQuoteById(quoteId);
+        const quote = await wixWindow.getBuilderQuoteById(quoteId);
         
         // Update rooms array and localStorage
         rooms = quote.rooms.map(room => room.name);
