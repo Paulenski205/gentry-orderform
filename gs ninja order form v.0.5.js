@@ -1,4 +1,7 @@
 // Main JavaScript File
+if (typeof wixWindow === 'undefined') {
+    console.error('wixWindow is not defined. Make sure this code is running in the Wix environment.');
+}
 
 // Constants and Initial Setup
 const TAX_RATE = 0.086; // 8.6%
@@ -79,7 +82,7 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        const quotes = await wixWindow.builderFunctions.getBuilderQuotes();
+        const quotes = await window.backendFunctions.getBuilderQuotes();
         
         // Create and show the order history modal
         const modal = document.createElement('div');
@@ -433,6 +436,7 @@ class CabinetCalculator {
 
 // Cost Breakdown Update Function
 function updateCostBreakdown() {
+try {
     const costBreakdownList = document.getElementById('cost-breakdown-list');
     if (!costBreakdownList) {
         console.error('Cost breakdown list element not found');
@@ -605,6 +609,10 @@ const roomData = savedData ? JSON.parse(savedData) : {}; // Parse if data exists
     summarySection.appendChild(totalLine);
 
     costBreakdownList.appendChild(summarySection);
+} catch (error) {
+        console.error('Error updating cost breakdown:', error);
+        showNotification('Error calculating costs', 'error');
+    }
 }
 
 
@@ -1044,79 +1052,97 @@ function setSelectedOptions(options) {
 // Save and Back Button Handling
 function saveQuote() {
     const modal = document.getElementById('saveQuoteModal');
-    if (!modal) {
-        // Create the modal if it doesn't exist
-        const saveQuoteModal = document.createElement('div');
-        saveQuoteModal.id = 'saveQuoteModal';
-        saveQuoteModal.className = 'modal';
-        saveQuoteModal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Save Quote</h3>
-                    <span class="close" onclick="cancelSaveQuote()">&times;</span>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="project-name">Project Name:</label>
-                        <input type="text" id="project-name" required>
-                    </div>
-                    <div class="confirmation-buttons">
-                        <button class="save-button" onclick="confirmSaveQuote()">Save</button>
-                        <button class="cancel" onclick="cancelSaveQuote()">Cancel</button>
-                    </div>
-                </div>
-            </div>`;
-        document.body.appendChild(saveQuoteModal);
+    if (modal) {
+        modal.style.display = 'block';
     }
-    modal.style.display = 'block';
 }
 
 async function confirmSaveQuote() {
+    setLoadingState(true);
     const projectName = document.getElementById('project-name').value.trim();
     
-    if (!projectName) {
-        showNotification('Please enter a project name', 'error');
-        return;
-    }
-
-    // Gather all quote data
-    const quoteData = {
-        id: document.getElementById('quote-id')?.value || generateQuoteId(),
-        projectName: projectName,
-        rooms: rooms.map(room => {
-            const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
-            const roomData = JSON.parse(localStorage.getItem(roomId));
-            return {
-                name: room,
-                data: roomData
-            };
-        }),
-        projectTotal: calculateProjectSubtotal(),
-        tax: calculateTax(),
-        taxType: document.getElementById('tax-type').value,
-        installationType: document.getElementById('installation-type').value,
-        installationCost: calculateTotalInstallationCost(),
-        installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
-        discount: parseFloat(document.getElementById('discount').value) || 0,
-        finalTotal: calculateFinalTotal()
-    };
-
     try {
-        // Use the new namespace
-        if (typeof wixWindow !== 'undefined' && wixWindow.builderFunctions) {
-            const result = await wixWindow.builderFunctions.saveBuilderQuote(quoteData);
-            if (result.success) {
-                showNotification('Quote saved successfully!', 'success');
-                updateLastSavedState();
-                cancelSaveQuote();
-            } else {
-                throw new Error('Failed to save quote');
-            }
-        } else {
-            throw new Error('Builder functions not available');
+        // Validate project name
+        if (!projectName) {
+            throw new Error('Please enter a project name');
         }
+
+        // Validate that there's at least one room with measurements
+        const hasValidRooms = rooms.some(room => {
+            const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
+            const roomData = JSON.parse(localStorage.getItem(roomId) || '{}');
+            const hasBaseMeasurements = Object.values(roomData?.dimensions?.base || {}).some(v => v);
+            const hasUpperMeasurements = Object.values(roomData?.dimensions?.upper || {}).some(v => v);
+            return hasBaseMeasurements || hasUpperMeasurements;
+        });
+
+        if (!hasValidRooms) {
+            throw new Error('At least one room must have measurements');
+        }
+
+        // Calculate all totals first to ensure they're valid
+        const projectTotal = calculateProjectSubtotal();
+        const tax = calculateTax();
+        const installationCost = calculateTotalInstallationCost();
+        const installationSurcharge = parseFloat(document.getElementById('installation-surcharge').value) || 0;
+        const discount = parseFloat(document.getElementById('discount').value) || 0;
+        const finalTotal = calculateFinalTotal();
+
+        // Validate calculations
+        if (isNaN(projectTotal) || isNaN(tax) || isNaN(installationCost) || isNaN(finalTotal)) {
+            throw new Error('Invalid calculation results');
+        }
+
+        // Gather quote data
+        const quoteData = {
+            id: document.getElementById('quote-id')?.value || generateQuoteId(),
+            projectName: projectName,
+            timestamp: new Date().toISOString(),
+            rooms: rooms.map(room => {
+                const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
+                const roomData = JSON.parse(localStorage.getItem(roomId));
+                return {
+                    name: room,
+                    data: roomData
+                };
+            }),
+            projectTotal,
+            tax,
+            taxType: document.getElementById('tax-type').value,
+            installationType: document.getElementById('installation-type').value,
+            installationCost,
+            installationSurcharge,
+            discount,
+            finalTotal
+        };
+
+        // Validate that we have access to the backend functions
+        if (typeof wixWindow === 'undefined' || !wixWindow.builderFunctions) {
+            throw new Error('Backend functions not available');
+        }
+
+        // Save the quote
+        const result = await wixWindow.builderFunctions.saveBuilderQuote(quoteData);
+        
+        if (!result || !result.success) {
+            throw new Error('Failed to save quote');
+        }
+
+        // Success handling
+        showNotification('Quote saved successfully!', 'success');
+        updateLastSavedState();
+        cancelSaveQuote();
+
+        // Optional: Update quote ID if it was generated
+        if (!document.getElementById('quote-id').value) {
+            document.getElementById('quote-id').value = quoteData.id;
+        }
+
     } catch (error) {
-        showNotification('Error saving quote: ' + error.message, 'error');
+        console.error('Save quote error:', error);
+        showNotification(error.message || 'Error saving quote', 'error');
+    } finally {
+        setLoadingState(false);
     }
 }
 
@@ -1288,6 +1314,92 @@ document.addEventListener('DOMContentLoaded', function() {
     styleSheet.innerText = newStyles;
     document.head.appendChild(styleSheet);
 
+    // Create the save quote modal
+    const saveQuoteModal = document.createElement('div');
+    saveQuoteModal.id = 'saveQuoteModal';
+    saveQuoteModal.className = 'modal';
+    saveQuoteModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Save Quote</h3>
+                <span class="close" onclick="cancelSaveQuote()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="project-name">Project Name:</label>
+                    <input type="text" id="project-name" required>
+                </div>
+                <div class="confirmation-buttons">
+                    <button class="save-button" onclick="confirmSaveQuote()">Save</button>
+                    <button class="cancel" onclick="cancelSaveQuote()">Cancel</button>
+                </div>
+            </div>
+        </div>`;
+    document.body.appendChild(saveQuoteModal);
+
+    // Define modal-related functions on window object
+    window.saveQuote = function() {
+        const modal = document.getElementById('saveQuoteModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    };
+
+    window.cancelSaveQuote = function() {
+        const modal = document.getElementById('saveQuoteModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.getElementById('project-name').value = '';
+        }
+    };
+
+    window.confirmSaveQuote = async function() {
+        const projectName = document.getElementById('project-name').value.trim();
+        
+        if (!projectName) {
+            showNotification('Please enter a project name', 'error');
+            return;
+        }
+
+        const quoteData = {
+            id: document.getElementById('quote-id')?.value || generateQuoteId(),
+            projectName: projectName,
+            rooms: rooms.map(room => {
+                const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
+                const roomData = JSON.parse(localStorage.getItem(roomId));
+                return {
+                    name: room,
+                    data: roomData
+                };
+            }),
+            projectTotal: calculateProjectSubtotal(),
+            tax: calculateTax(),
+            taxType: document.getElementById('tax-type').value,
+            installationType: document.getElementById('installation-type').value,
+            installationCost: calculateTotalInstallationCost(),
+            installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
+            discount: parseFloat(document.getElementById('discount').value) || 0,
+            finalTotal: calculateFinalTotal()
+        };
+
+        try {
+            if (typeof wixWindow !== 'undefined' && wixWindow.builderFunctions) {
+                const result = await wixWindow.builderFunctions.saveBuilderQuote(quoteData);
+                if (result.success) {
+                    showNotification('Quote saved successfully!', 'success');
+                    updateLastSavedState();
+                    cancelSaveQuote();
+                } else {
+                    throw new Error('Failed to save quote');
+                }
+            } else {
+                throw new Error('Builder functions not available');
+            }
+        } catch (error) {
+            showNotification('Error saving quote: ' + error.message, 'error');
+        }
+    };
+
     if (closeBtn) {
         closeBtn.onclick = closeModal;
     } else {
@@ -1306,25 +1418,29 @@ document.addEventListener('DOMContentLoaded', function() {
         clearDataButton.addEventListener('click', showClearConfirmation);
     }
     document.getElementById('back-button')?.addEventListener('click', handleBack);
-    document.getElementById('save-quote')?.addEventListener('click', saveQuote); // Add this line
+    document.getElementById('save-quote')?.addEventListener('click', window.saveQuote); // Updated to use window.saveQuote
     document.getElementById('tax-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-surcharge').addEventListener('input', updateCostBreakdown);
     document.getElementById('discount').addEventListener('input', updateCostBreakdown);
-});
 
-// Window click handler for modals
-window.onclick = function(event) {
-    if (event.target == modal) {
-        closeModal(); // Directly call closeModal
-    }
-    if (event.target == document.getElementById('backConfirmationModal')) {
-        hideBackConfirmation();
-    }
-    if (event.target == document.getElementById('clearConfirmationModal')) {
-        cancelClearData(); // Directly call cancelClearData
-    }
-};
+    // Update window click handler for all modals
+    window.onclick = function(event) {
+        const saveModal = document.getElementById('saveQuoteModal');
+        if (event.target === saveModal) {
+            cancelSaveQuote();
+        }
+        if (event.target === modal) {
+            closeModal();
+        }
+        if (event.target === document.getElementById('backConfirmationModal')) {
+            hideBackConfirmation();
+        }
+        if (event.target === document.getElementById('clearConfirmationModal')) {
+            cancelClearData();
+        }
+    };
+});
 
 function closeModal() {
     if (modal) { // Check if modal exists
@@ -1502,10 +1618,9 @@ function calculateTotalInstallationCost() {
     
     return total;
 }
-
 async function loadQuote(quoteId) {
     try {
-        const quote = await wixWindow.builderFunctions.getBuilderQuoteById(quoteId);
+        const quote = await window.backendFunctions.getBuilderQuoteById(quoteId);
         
         // Update rooms array and localStorage
         rooms = quote.rooms.map(room => room.name);
@@ -1547,6 +1662,7 @@ async function loadQuote(quoteId) {
         showNotification('Error loading quote: ' + error.message, 'error');
     }
 }
+
 function calculateTax() {
     const taxType = document.getElementById('tax-type').value;
     const projectSubtotal = calculateProjectSubtotal();
@@ -1559,4 +1675,30 @@ function calculateFinalTotal() {
     const installationCost = calculateTotalInstallationCost();
     const discount = parseFloat(document.getElementById('discount').value) || 0;
     return projectSubtotal + tax + installationCost - discount;
+}
+
+function calculateProjectSubtotal() {
+    let total = 0;
+    rooms.forEach((roomName, index) => {
+        const roomId = `room-${index + 1}`;
+        const roomData = JSON.parse(localStorage.getItem(roomId)) || {};
+        const linearFootage = calculateRoomLinearFootage(roomData);
+        const calculator = new CabinetCalculator(linearFootage);
+        total += calculator.calculateTotalCost(roomData?.options || {});
+    });
+    return total;
+}
+
+function setLoadingState(isLoading) {
+    const saveButton = document.querySelector('#saveQuoteModal .save-button');
+    if (saveButton) {
+        saveButton.disabled = isLoading;
+        saveButton.textContent = isLoading ? 'Saving...' : 'Save';
+    }
+
+    // Optional: Add visual feedback
+    const modal = document.getElementById('saveQuoteModal');
+    if (modal) {
+        modal.style.cursor = isLoading ? 'wait' : 'default';
+    }
 }
