@@ -1042,7 +1042,7 @@ function setSelectedOptions(options) {
 }
 
 // Save and Back Button Handling
-async function saveQuote() {
+function saveQuote() {
     const modal = document.getElementById('saveQuoteModal');
     if (!modal) {
         // Create the modal if it doesn't exist
@@ -1102,13 +1102,18 @@ async function confirmSaveQuote() {
     };
 
     try {
-        const result = await window.backendFunctions.saveBuilderQuote(quoteData);
-        if (result.success) {
-            showNotification('Quote saved successfully!', 'success');
-            updateLastSavedState();
-            cancelSaveQuote();
+        // Call the global function that was set up by the page code
+        if (typeof wixWindow !== 'undefined' && wixWindow.saveBuilderQuote) {
+            const result = await wixWindow.saveBuilderQuote(quoteData);
+            if (result.success) {
+                showNotification('Quote saved successfully!', 'success');
+                updateLastSavedState();
+                cancelSaveQuote();
+            } else {
+                throw new Error('Failed to save quote');
+            }
         } else {
-            throw new Error('Failed to save quote');
+            throw new Error('Save function not available');
         }
     } catch (error) {
         showNotification('Error saving quote: ' + error.message, 'error');
