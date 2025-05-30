@@ -1113,7 +1113,7 @@ async function confirmSaveQuote() {
             finalTotal
         };
 
-        // Save the quote using the page's exported function
+        // Save the quote using the exported function
         const result = await saveQuote(quoteData);
         
         if (!result || !result.success) {
