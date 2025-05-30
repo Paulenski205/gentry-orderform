@@ -764,3 +764,11 @@ h1 {
         max-height: 400px;
         overflow-y: auto;
     }
+.save-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+#saveQuoteModal.loading {
+    cursor: wait;
+}
