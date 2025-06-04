@@ -126,39 +126,14 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        setLoadingState(true);
+        console.log('Fetching order history...');
         
-        // Create a promise to handle the response
-        const getQuotesPromise = new Promise((resolve, reject) => {
-            // Set up one-time message handler for the response
-            const handleResponse = (event) => {
-                if (event.data.type === 'quotesResult') {
-                    window.removeEventListener('message', handleResponse);
-                    if (event.data.success) {
-                        resolve(event.data.quotes);
-                    } else {
-                        reject(new Error(event.data.error || 'Failed to fetch quotes'));
-                    }
-                }
-            };
+        // Send message to Velo code
+        window.parent.postMessage({
+            type: 'getQuotes'
+        }, '*');
 
-            window.addEventListener('message', handleResponse);
-
-            // Request quotes
-            window.parent.postMessage({
-                type: 'getQuotes'
-            }, '*');
-
-            // Set timeout
-            setTimeout(() => {
-                window.removeEventListener('message', handleResponse);
-                reject(new Error('Request timed out'));
-            }, 30000);
-        });
-
-        const quotes = await getQuotesPromise;
-        
-        // Create and show the order history modal
+        // Create and show loading state
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.id = 'orderHistoryModal';
@@ -171,20 +146,7 @@ async function showOrderHistory() {
                 </div>
                 <div class="modal-body">
                     <div class="quotes-list">
-                        ${quotes.map(quote => `
-                            <div class="quote-item" data-quote-id="${quote.id}">
-                                <div class="quote-header">
-                                    <span class="project-name">${quote.projectName}</span>
-                                    <span class="quote-date">${new Date(quote.timestamp).toLocaleDateString()}</span>
-                                </div>
-                                <div class="quote-details">
-                                    <div>Quote ID: ${quote.id}</div>
-                                    <div>Total: ${formatMoney(quote.finalTotal)}</div>
-                                    <div>Status: ${quote.status || 'Pending'}</div>
-                                </div>
-                                <button onclick="loadQuote('${quote.id}')">Load Quote</button>
-                            </div>
-                        `).join('')}
+                        <div class="loading">Loading quotes...</div>
                     </div>
                 </div>
             </div>
@@ -192,6 +154,34 @@ async function showOrderHistory() {
 
         document.body.appendChild(modal);
         modal.style.display = 'block';
+
+        // Add message listener for the response
+        window.addEventListener('message', function handleQuotesResponse(event) {
+            if (event.data.type === 'quotesResult') {
+                window.removeEventListener('message', handleQuotesResponse);
+                
+                const quotesListDiv = modal.querySelector('.quotes-list');
+                if (event.data.success && event.data.quotes) {
+                    // Update modal with quotes
+                    quotesListDiv.innerHTML = event.data.quotes.map(quote => `
+                        <div class="quote-item" data-quote-id="${quote.id}">
+                            <div class="quote-header">
+                                <span class="project-name">${quote.projectName}</span>
+                                <span class="quote-date">${new Date(quote.timestamp).toLocaleDateString()}</span>
+                            </div>
+                            <div class="quote-details">
+                                <div>Quote ID: ${quote.id}</div>
+                                <div>Total: ${formatMoney(quote.finalTotal)}</div>
+                                <div>Status: ${quote.status || 'Pending'}</div>
+                            </div>
+                            <button onclick="loadQuote('${quote.id}')">Load Quote</button>
+                        </div>
+                    `).join('') || '<div>No quotes found</div>';
+                } else {
+                    quotesListDiv.innerHTML = `<div class="error">Error loading quotes: ${event.data.error || 'Unknown error'}</div>`;
+                }
+            }
+        });
 
         // Add close button functionality
         const closeBtn = modal.querySelector('.close');
@@ -201,13 +191,10 @@ async function showOrderHistory() {
         };
 
     } catch (error) {
-        console.error('Error loading order history:', error);
+        console.error('Error showing order history:', error);
         showNotification('Error loading order history: ' + error.message, 'error');
-    } finally {
-        setLoadingState(false);
     }
 }
-
 
 function goToMainMenu() {
     document.getElementById('create-quote-container').style.display = 'none';
