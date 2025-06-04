@@ -1415,13 +1415,15 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 window.confirmSaveQuote = async function() {
-    setLoadingState(true);
     const projectName = document.getElementById('project-name').value.trim();
     
     try {
         if (!projectName) {
-            throw new Error('Please enter a project name');
+            showNotification('Please enter a project name', 'error');
+            return;
         }
+
+        setLoadingState(true);
 
         const quoteData = {
             id: document.getElementById('quote-id')?.value || generateQuoteId(),
@@ -1444,25 +1446,15 @@ window.confirmSaveQuote = async function() {
             finalTotal: calculateFinalTotal()
         };
 
-        console.log('Attempting to save quote:', quoteData);
+        // Send message to Velo code
+        window.parent.postMessage({
+            type: 'saveQuote',
+            detail: quoteData
+        }, '*');
 
-        // Send message and wait for response
-        const result = await messageHandlers.sendMessage('SAVE_QUOTE', quoteData);
-        console.log('Save result:', result);
-
-        if (!result) {
-            throw new Error('Invalid response from save operation');
-        }
-
-        // Success handling
         showNotification('Quote saved successfully!', 'success');
         updateLastSavedState();
         cancelSaveQuote();
-
-        // Update quote ID if provided
-        if (result.quoteId) {
-            document.getElementById('quote-id').value = result.quoteId;
-        }
 
     } catch (error) {
         console.error('Save error:', error);
