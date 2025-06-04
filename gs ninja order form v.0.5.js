@@ -1,5 +1,52 @@
 // Main JavaScript File
 
+// Add this at the top of your JavaScript file
+const messageHandlers = {
+    messageQueue: new Map(),
+    nextMessageId: 1,
+
+    sendMessage: function(type, data) {
+        return new Promise((resolve, reject) => {
+            const messageId = this.nextMessageId++;
+            
+            // Store the resolve/reject handlers
+            this.messageQueue.set(messageId, { resolve, reject });
+            
+            // Send the message to the parent (Wix) window
+            window.parent.postMessage({
+                messageId,
+                type,
+                data
+            }, '*');
+
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                if (this.messageQueue.has(messageId)) {
+                    this.messageQueue.delete(messageId);
+                    reject(new Error('Request timed out'));
+                }
+            }, 10000);
+        });
+    }
+};
+
+// Add the message listener
+window.addEventListener('message', function(event) {
+    const { messageId, success, data, error } = event.data;
+    
+    // Look up the handlers for this message
+    const handlers = messageHandlers.messageQueue.get(messageId);
+    if (handlers) {
+        messageHandlers.messageQueue.delete(messageId);
+        if (success) {
+            handlers.resolve(data);
+        } else {
+            handlers.reject(new Error(error));
+        }
+    }
+});
+
+
 // Constants and Initial Setup
 const TAX_RATE = 0.086; // 8.6%
 let currentQuoteId = localStorage.getItem('lastQuoteId') || 0;
@@ -1401,20 +1448,12 @@ window.confirmSaveQuote = async function() {
 
         console.log('Attempting to save quote:', quoteData);
 
-        // Send message to Wix page
-        const result = await window.parent.postMessage({
-            type: 'SAVE_QUOTE',
-            quoteData: quoteData
-        }, '*');
-
+        // Send message and wait for response
+        const result = await messageHandlers.sendMessage('SAVE_QUOTE', quoteData);
         console.log('Save result:', result);
 
         if (!result) {
-            throw new Error('No response from save operation');
-        }
-
-        if (!result.success) {
-            throw new Error(result.error || 'Failed to save quote');
+            throw new Error('Invalid response from save operation');
         }
 
         // Success handling
