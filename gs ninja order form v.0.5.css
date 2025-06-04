@@ -795,3 +795,58 @@ h1 {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
+.error {
+    color: #f44336;
+    padding: 20px;
+    text-align: center;
+}
+
+.quotes-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.quote-item {
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.quote-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.project-name {
+    font-weight: bold;
+}
+
+.quote-date {
+    color: #666;
+}
+
+.quote-details {
+    margin-bottom: 10px;
+}
+
+.quote-item button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.quote-item button:hover {
+    background-color: #45a049;
+}
