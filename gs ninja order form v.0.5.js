@@ -126,9 +126,7 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        const quotes = await window.parent.postMessage({
-            type: 'GET_QUOTES'
-        }, '*');
+        const quotes = await messageHandlers.sendMessage('GET_QUOTES');
         
         // Create and show the order history modal
         const modal = document.createElement('div');
@@ -1695,10 +1693,7 @@ function calculateTotalInstallationCost() {
 
 async function loadQuote(quoteId) {
     try {
-        const quote = await window.parent.postMessage({
-            type: 'GET_QUOTE',
-            quoteId: quoteId
-        }, '*');
+        const quote = await messageHandlers.sendMessage('GET_QUOTE', { quoteId });
         
         if (!quote) {
             throw new Error('Quote not found');
