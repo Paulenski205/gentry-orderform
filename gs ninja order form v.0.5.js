@@ -1069,7 +1069,7 @@ async function confirmSaveQuote() {
 
         // Check if save function is available
         if (typeof window.$w?.page?.saveQuote !== 'function') {
-            throw new Error('Save function not available');
+            throw new Error('Save function not available. Please refresh the page.');
         }
 
         // Validate that there's at least one room with measurements
@@ -1121,29 +1121,39 @@ async function confirmSaveQuote() {
             finalTotal
         };
 
-        // Save the quote using the page's exported function
-        const result = await window.$w.page.saveQuote(quoteData);
-        
-        if (!result || !result.success) {
-            throw new Error(result.error || 'Failed to save quote');
+        try {
+            // Save the quote using the page's exported function
+            const result = await window.$w.page.saveQuote(quoteData);
+            
+            // Log the response for debugging
+            console.log('Save quote response:', result);
+
+            // Check if we got a response
+            if (!result) {
+                throw new Error('No response from save operation');
+            }
+
+            // Success handling
+            showNotification('Quote saved successfully!', 'success');
+            updateLastSavedState();
+            cancelSaveQuote();
+
+            // Update quote ID if it was generated
+            if (result.quoteId) {
+                document.getElementById('quote-id').value = result.quoteId;
+            }
+
+            // Optional: Log success details
+            console.log('Quote saved successfully:', {
+                id: quoteData.id,
+                projectName: quoteData.projectName,
+                timestamp: quoteData.timestamp
+            });
+
+        } catch (saveError) {
+            console.error('Error during save operation:', saveError);
+            throw new Error(`Failed to save quote: ${saveError.message}`);
         }
-
-        // Success handling
-        showNotification('Quote saved successfully!', 'success');
-        updateLastSavedState();
-        cancelSaveQuote();
-
-        // Update quote ID if it was generated
-        if (!document.getElementById('quote-id').value && result.quoteId) {
-            document.getElementById('quote-id').value = result.quoteId;
-        }
-
-        // Optional: Log success details
-        console.log('Quote saved successfully:', {
-            id: quoteData.id,
-            projectName: quoteData.projectName,
-            timestamp: quoteData.timestamp
-        });
 
     } catch (error) {
         console.error('Save quote error:', error);
@@ -1368,42 +1378,52 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    const quoteData = {
-        id: document.getElementById('quote-id')?.value || generateQuoteId(),
-        projectName: projectName,
-        rooms: rooms.map(room => {
-            const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
-            const roomData = JSON.parse(localStorage.getItem(roomId));
-            return {
-                name: room,
-                data: roomData
-            };
-        }),
-        projectTotal: calculateProjectSubtotal(),
-        tax: calculateTax(),
-        taxType: document.getElementById('tax-type').value,
-        installationType: document.getElementById('installation-type').value,
-        installationCost: calculateTotalInstallationCost(),
-        installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
-        discount: parseFloat(document.getElementById('discount').value) || 0,
-        finalTotal: calculateFinalTotal()
-    };
-
     try {
-        // Use the exported saveQuote function directly
-        const result = await saveQuote(quoteData);
-        if (result.success) {
+        const quoteData = {
+            id: document.getElementById('quote-id')?.value || generateQuoteId(),
+            projectName: projectName,
+            rooms: rooms.map(room => {
+                const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
+                const roomData = JSON.parse(localStorage.getItem(roomId));
+                return {
+                    name: room,
+                    data: roomData
+                };
+            }),
+            projectTotal: calculateProjectSubtotal(),
+            tax: calculateTax(),
+            taxType: document.getElementById('tax-type').value,
+            installationType: document.getElementById('installation-type').value,
+            installationCost: calculateTotalInstallationCost(),
+            installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
+            discount: parseFloat(document.getElementById('discount').value) || 0,
+            finalTotal: calculateFinalTotal()
+        };
+
+        // Call the backend function through the global namespace
+        if (typeof window.backendFunctions?.saveBuilderQuote !== 'function') {
+            throw new Error('Save function not available');
+        }
+
+        const result = await window.backendFunctions.saveBuilderQuote(quoteData);
+        console.log('Save result:', result);
+
+        if (result && result.success) {
             showNotification('Quote saved successfully!', 'success');
             updateLastSavedState();
             cancelSaveQuote();
+
+            if (result.quoteId) {
+                document.getElementById('quote-id').value = result.quoteId;
+            }
         } else {
-            throw new Error('Failed to save quote');
+            throw new Error(result?.error || 'Failed to save quote');
         }
     } catch (error) {
+        console.error('Save error:', error);
         showNotification('Error saving quote: ' + error.message, 'error');
     }
 };
-
 
     if (closeBtn) {
         closeBtn.onclick = closeModal;
