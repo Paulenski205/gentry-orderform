@@ -79,10 +79,9 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        if (typeof window.$w?.page?.getQuotes !== 'function') {
-            throw new Error('Get quotes function not available');
-        }
-        const quotes = await window.$w.page.getQuotes();
+        const quotes = await window.parent.postMessage({
+            type: 'GET_QUOTES'
+        }, '*');
         
         // Create and show the order history modal
         const modal = document.createElement('div');
@@ -1402,14 +1401,12 @@ window.confirmSaveQuote = async function() {
 
         console.log('Attempting to save quote:', quoteData);
 
-        // Try to access the save function
-        const saveFn = window.backendFunctions?.saveBuilderQuote;
-        if (typeof saveFn !== 'function') {
-            console.error('Save function not found:', window.backendFunctions);
-            throw new Error('Save functionality not available. Please refresh the page.');
-        }
+        // Send message to Wix page
+        const result = await window.parent.postMessage({
+            type: 'SAVE_QUOTE',
+            quoteData: quoteData
+        }, '*');
 
-        const result = await saveFn(quoteData);
         console.log('Save result:', result);
 
         if (!result) {
@@ -1656,12 +1653,13 @@ function calculateTotalInstallationCost() {
     
     return total;
 }
+
 async function loadQuote(quoteId) {
     try {
-        if (typeof window.$w?.page?.getQuoteById !== 'function') {
-            throw new Error('Get quote function not available');
-        }
-        const quote = await window.$w.page.getQuoteById(quoteId);
+        const quote = await window.parent.postMessage({
+            type: 'GET_QUOTE',
+            quoteId: quoteId
+        }, '*');
         
         if (!quote) {
             throw new Error('Quote not found');
