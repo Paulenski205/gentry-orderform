@@ -126,7 +126,37 @@ function showCreateQuote() {
 
 async function showOrderHistory() {
     try {
-        const quotes = await messageHandlers.sendMessage('GET_QUOTES');
+        setLoadingState(true);
+        
+        // Create a promise to handle the response
+        const getQuotesPromise = new Promise((resolve, reject) => {
+            // Set up one-time message handler for the response
+            const handleResponse = (event) => {
+                if (event.data.type === 'quotesResult') {
+                    window.removeEventListener('message', handleResponse);
+                    if (event.data.success) {
+                        resolve(event.data.quotes);
+                    } else {
+                        reject(new Error(event.data.error || 'Failed to fetch quotes'));
+                    }
+                }
+            };
+
+            window.addEventListener('message', handleResponse);
+
+            // Request quotes
+            window.parent.postMessage({
+                type: 'getQuotes'
+            }, '*');
+
+            // Set timeout
+            setTimeout(() => {
+                window.removeEventListener('message', handleResponse);
+                reject(new Error('Request timed out'));
+            }, 30000);
+        });
+
+        const quotes = await getQuotesPromise;
         
         // Create and show the order history modal
         const modal = document.createElement('div');
@@ -169,10 +199,15 @@ async function showOrderHistory() {
             modal.style.display = 'none';
             modal.remove();
         };
+
     } catch (error) {
+        console.error('Error loading order history:', error);
         showNotification('Error loading order history: ' + error.message, 'error');
+    } finally {
+        setLoadingState(false);
     }
 }
+
 
 function goToMainMenu() {
     document.getElementById('create-quote-container').style.display = 'none';
