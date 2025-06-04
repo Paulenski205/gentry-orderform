@@ -1370,15 +1370,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    window.confirmSaveQuote = async function() {
+window.confirmSaveQuote = async function() {
+    setLoadingState(true);
     const projectName = document.getElementById('project-name').value.trim();
     
-    if (!projectName) {
-        showNotification('Please enter a project name', 'error');
-        return;
-    }
-
     try {
+        if (!projectName) {
+            throw new Error('Please enter a project name');
+        }
+
         const quoteData = {
             id: document.getElementById('quote-id')?.value || generateQuoteId(),
             projectName: projectName,
@@ -1400,28 +1400,41 @@ document.addEventListener('DOMContentLoaded', function() {
             finalTotal: calculateFinalTotal()
         };
 
-        // Call the backend function through the global namespace
-        if (typeof window.backendFunctions?.saveBuilderQuote !== 'function') {
-            throw new Error('Save function not available');
+        console.log('Attempting to save quote:', quoteData);
+
+        // Try to access the save function
+        const saveFn = window.backendFunctions?.saveBuilderQuote;
+        if (typeof saveFn !== 'function') {
+            console.error('Save function not found:', window.backendFunctions);
+            throw new Error('Save functionality not available. Please refresh the page.');
         }
 
-        const result = await window.backendFunctions.saveBuilderQuote(quoteData);
+        const result = await saveFn(quoteData);
         console.log('Save result:', result);
 
-        if (result && result.success) {
-            showNotification('Quote saved successfully!', 'success');
-            updateLastSavedState();
-            cancelSaveQuote();
-
-            if (result.quoteId) {
-                document.getElementById('quote-id').value = result.quoteId;
-            }
-        } else {
-            throw new Error(result?.error || 'Failed to save quote');
+        if (!result) {
+            throw new Error('No response from save operation');
         }
+
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to save quote');
+        }
+
+        // Success handling
+        showNotification('Quote saved successfully!', 'success');
+        updateLastSavedState();
+        cancelSaveQuote();
+
+        // Update quote ID if provided
+        if (result.quoteId) {
+            document.getElementById('quote-id').value = result.quoteId;
+        }
+
     } catch (error) {
         console.error('Save error:', error);
         showNotification('Error saving quote: ' + error.message, 'error');
+    } finally {
+        setLoadingState(false);
     }
 };
 
