@@ -127,12 +127,12 @@ function showCreateQuote() {
 async function showOrderHistory() {
     try {
         console.log('Fetching order history...');
-        
+
         // Create and show loading state
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.id = 'orderHistoryModal';
-        
+
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -151,17 +151,17 @@ async function showOrderHistory() {
         modal.style.display = 'block';
 
         // Add message listener for the response
-        window.addEventListener('message', function handleQuotesResponse(event) {
+        const handleQuotesResponse = (event) => {
             console.log('Received response in order history:', event.data);
-            
+
             if (event.data.type === 'getQuotesResult') {
                 window.removeEventListener('message', handleQuotesResponse);
-                
+
                 const quotesListDiv = modal.querySelector('.quotes-list');
                 if (event.data.success && event.data.result) {
                     const quotes = event.data.result;
                     console.log('Rendering quotes:', quotes);
-                    
+
                     // Update modal with quotes
                     if (quotes.length > 0) {
                         quotesListDiv.innerHTML = quotes.map(quote => `
@@ -189,28 +189,30 @@ async function showOrderHistory() {
                         </div>`;
                 }
             }
-        });
+        };
+
+        window.addEventListener('message', handleQuotesResponse); // Add event listener *before* sending message
 
         // Send message to Velo code
         console.log('Sending getQuotes request');
-        window.parent.postMessage({
-            type: 'getQuotes'
-        }, '*');
+        window.parent.postMessage({ type: 'getQuotes' }, '*');
 
         // Add close button functionality
         const closeBtn = modal.querySelector('.close');
         closeBtn.onclick = () => {
             modal.style.display = 'none';
             modal.remove();
+            window.removeEventListener('message', handleQuotesResponse); // Remove listener on close
         };
 
         // Add click outside modal to close
-        window.onclick = function(event) {
+        modal.addEventListener('click', (event) => {
             if (event.target === modal) {
                 modal.style.display = 'none';
                 modal.remove();
+                window.removeEventListener('message', handleQuotesResponse); // Remove listener on close
             }
-        };
+        });
 
     } catch (error) {
         console.error('Error showing order history:', error);
