@@ -69,11 +69,19 @@ window.showMainMenu = function() {
     document.getElementById('create-quote-container').style.display = 'none';
 }
 
-function showCreateQuote() {
-    // Reset rooms array to just Room 1
-    rooms = ['Room 1'];
-    currentRoomId = 'room-1';
-    localStorage.setItem('rooms', JSON.stringify(rooms));
+function showCreateQuote(isNewQuote = true) { // Add isNewQuote parameter
+    if (isNewQuote) { // Only clear data if it's a new quote
+        rooms = ['Room 1'];
+        currentRoomId = 'room-1';
+        localStorage.setItem('rooms', JSON.stringify(rooms));
+
+// Reset the title header if it's a new quote
+    if (isNewQuote) {
+        const createQuoteHeader = document.querySelector('#create-quote-container h2');
+        if (createQuoteHeader) {
+            createQuoteHeader.textContent = 'Create New Quote';
+        }
+    }
 
     // Clear all room data from localStorage
     for (let i = 1; i <= 10; i++) { // Assuming max 10 rooms
@@ -104,7 +112,7 @@ function showCreateQuote() {
     document.getElementById('installation-type').selectedIndex = 0;
     document.getElementById('installation-surcharge').value = '0.00';
     document.getElementById('discount').value = '0.00';
-
+    }
     // Initialize room selector
     initializeRoomSelector();
 
@@ -1698,43 +1706,53 @@ async function loadQuote(quoteId) {
 
         console.log('Loaded quote:', quote);
 
-        // Check if quote.rooms is an array before mapping
-        if (!Array.isArray(quote.rooms)) {
-            console.error('Invalid rooms data:', quote.rooms);
-            throw new Error('Invalid rooms data in loaded quote');
-        }
+        // Load the saved quote data into the form
+        loadSavedQuote(quote); // Call the new function
 
-        // Update the form with the loaded quote data
-        document.getElementById('quote-id').value = quote.id;
-        document.getElementById('project-name').value = quote.projectName;
-        document.getElementById('tax-type').value = quote.taxType;
-        document.getElementById('installation-type').value = quote.installationType;
-        document.getElementById('installation-surcharge').value = quote.installationSurcharge || '0.00'; // Handle potential missing values
-        document.getElementById('discount').value = quote.discount || '0.00'; // Handle potential missing values
-
-        // Update rooms and local storage
-        rooms = quote.rooms.map(room => room.name);
-        localStorage.setItem('rooms', JSON.stringify(rooms));
-        quote.rooms.forEach(room => {
-            localStorage.setItem(`room-${room.name.toLowerCase().replace(/\s+/g, '-')}`, JSON.stringify(room.data));
-        });
-
-        currentRoomId = 'room-1';
-        initializeRoomSelector();
-        loadRoomData(currentRoomId);
-
-        // Close order history modal and show create quote form
+        // Close order history modal
         const orderHistoryModal = document.getElementById('orderHistoryModal');
         if (orderHistoryModal) {
             orderHistoryModal.style.display = 'none';
             orderHistoryModal.remove();
         }
-        showCreateQuote();
 
     } catch (error) {
         console.error('Load quote error:', error);
         showNotification('Error loading quote: ' + error.message, 'error');
     }
+}
+
+async function loadSavedQuote(quote) {
+    // 1. Update rooms array and localStorage
+    rooms = quote.rooms.map(room => room.name);
+    localStorage.setItem('rooms', JSON.stringify(rooms));
+
+    // 2. Save room data to localStorage
+    quote.rooms.forEach(room => {
+        localStorage.setItem(`room-${room.name.toLowerCase().replace(/\s+/g, '-')}`, JSON.stringify(room.data));
+    });
+
+ // Update the title header with the project name
+    const createQuoteHeader = document.querySelector('#create-quote-container h2'); // Select the h2 element
+    if (createQuoteHeader) {
+        createQuoteHeader.textContent = `Edit Quote: ${quote.projectName}`;
+
+    // 3. Update current room ID
+    currentRoomId = 'room-1';
+
+    // 4. Update UI
+    document.getElementById('quote-id').value = quote.id;
+    document.getElementById('tax-type').value = quote.taxType;
+    document.getElementById('installation-type').value = quote.installationType;
+    document.getElementById('installation-surcharge').value = quote.installationSurcharge || '0.00';
+    document.getElementById('discount').value = quote.discount || '0.00';
+
+    // 5. Initialize room selector and load first room
+    initializeRoomSelector();
+    loadRoomData(currentRoomId);
+
+    // 6. Show the quote form *without* clearing data
+    showCreateQuote(false); // Pass false to prevent clearing data
 }
 
 function calculateTax() {
