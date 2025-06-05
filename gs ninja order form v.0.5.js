@@ -46,6 +46,7 @@ window.addEventListener('message', MessageSystem.handleResponse.bind(MessageSyst
 // Constants and Initial Setup
 const TAX_RATE = 0.086; // 8.6%
 let currentQuoteId = localStorage.getItem('lastQuoteId') || 0;
+let rooms = []; // Initialize rooms here
 let rooms; // Declare rooms here
 let modal; // Declare modal here
 let closeBtn; // Declare closeBtn here
@@ -69,53 +70,54 @@ window.showMainMenu = function() {
     document.getElementById('create-quote-container').style.display = 'none';
 }
 
-function showCreateQuote(isNewQuote = true) { // Add isNewQuote parameter
+function showCreateQuote(isNewQuote = true) {
     if (isNewQuote) { // Only clear data if it's a new quote
+        // Reset rooms array and localStorage
         rooms = ['Room 1'];
         currentRoomId = 'room-1';
         localStorage.setItem('rooms', JSON.stringify(rooms));
 
-// Reset the title header if it's a new quote
-    if (isNewQuote) {
+        // Reset the title header
         const createQuoteHeader = document.querySelector('#create-quote-container h2');
         if (createQuoteHeader) {
             createQuoteHeader.textContent = 'Create New Quote';
         }
-    }
 
-    // Clear all room data from localStorage
-    for (let i = 1; i <= 10; i++) { // Assuming max 10 rooms
-        localStorage.removeItem(`room-${i}`);
-    }
-
-    // Reset form fields
-    document.getElementById('room-name').value = 'Room 1';
-    
-    // Clear wall measurements
-    const baseWalls = document.querySelectorAll('#base-walls input');
-    const upperWalls = document.querySelectorAll('#upper-walls input');
-    baseWalls.forEach(input => input.value = '');
-    upperWalls.forEach(input => input.value = '');
-
-    // Reset all options
-    const options = document.querySelectorAll('.options-form select, .options-form input');
-    options.forEach(option => {
-        if (option.tagName === 'SELECT') {
-            option.selectedIndex = 0;
-        } else {
-            option.value = '';
+        // Clear all room data from localStorage
+        for (let i = 1; i <= 10; i++) {
+            localStorage.removeItem(`room-${i}`);
         }
-    });
 
-    // Reset additional options
-    document.getElementById('tax-type').selectedIndex = 0;
-    document.getElementById('installation-type').selectedIndex = 0;
-    document.getElementById('installation-surcharge').value = '0.00';
-    document.getElementById('discount').value = '0.00';
+        // Reset form fields
+        document.getElementById('room-name').value = 'Room 1';
+        
+        // Clear wall measurements
+        const baseWalls = document.querySelectorAll('#base-walls input');
+        const upperWalls = document.querySelectorAll('#upper-walls input');
+        baseWalls.forEach(input => input.value = '');
+        upperWalls.forEach(input => input.value = '');
+
+        // Reset all options
+        const options = document.querySelectorAll('.options-form select, .options-form input');
+        options.forEach(option => {
+            if (option.tagName === 'SELECT') {
+                option.selectedIndex = 0;
+            } else {
+                option.value = '';
+            }
+        });
+
+        // Reset additional options
+        document.getElementById('tax-type').selectedIndex = 0;
+        document.getElementById('installation-type').selectedIndex = 0;
+        document.getElementById('installation-surcharge').value = '0.00';
+        document.getElementById('discount').value = '0.00';
+
+        // Initialize room selector
+        initializeRoomSelector();
     }
-    // Initialize room selector
-    initializeRoomSelector();
 
+    // These actions happen regardless of isNewQuote
     // Update display
     document.getElementById('welcome-container').style.display = 'none';
     document.getElementById('main-menu-container').style.display = 'none';
@@ -124,8 +126,6 @@ function showCreateQuote(isNewQuote = true) { // Add isNewQuote parameter
     // Update calculations
     updateLinearFootage();
     updateCostBreakdown();
-
-    console.log('Created new quote, reset to Room 1');
 }
 
 async function showOrderHistory() {
