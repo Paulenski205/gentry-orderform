@@ -128,11 +128,6 @@ async function showOrderHistory() {
     try {
         console.log('Fetching order history...');
         
-        // Send message to Velo code
-        window.parent.postMessage({
-            type: 'getQuotes'
-        }, '*');
-
         // Create and show loading state
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -157,37 +152,64 @@ async function showOrderHistory() {
 
         // Add message listener for the response
         window.addEventListener('message', function handleQuotesResponse(event) {
-            if (event.data.type === 'quotesResult') {
+            console.log('Received response in order history:', event.data);
+            
+            if (event.data.type === 'getQuotesResult') {
                 window.removeEventListener('message', handleQuotesResponse);
                 
                 const quotesListDiv = modal.querySelector('.quotes-list');
-                if (event.data.success && event.data.quotes) {
+                if (event.data.success && event.data.result) {
+                    const quotes = event.data.result;
+                    console.log('Rendering quotes:', quotes);
+                    
                     // Update modal with quotes
-                    quotesListDiv.innerHTML = event.data.quotes.map(quote => `
-                        <div class="quote-item" data-quote-id="${quote.id}">
-                            <div class="quote-header">
-                                <span class="project-name">${quote.projectName}</span>
-                                <span class="quote-date">${new Date(quote.timestamp).toLocaleDateString()}</span>
+                    if (quotes.length > 0) {
+                        quotesListDiv.innerHTML = quotes.map(quote => `
+                            <div class="quote-item" data-quote-id="${quote.id}">
+                                <div class="quote-header">
+                                    <span class="project-name">${quote.projectName}</span>
+                                    <span class="quote-date">${new Date(quote.timestamp).toLocaleDateString()}</span>
+                                </div>
+                                <div class="quote-details">
+                                    <div>Quote ID: ${quote.id}</div>
+                                    <div>Total: ${formatMoney(quote.finalTotal)}</div>
+                                    <div>Status: ${quote.status || 'Pending'}</div>
+                                </div>
+                                <button onclick="loadQuote('${quote.id}')">Load Quote</button>
                             </div>
-                            <div class="quote-details">
-                                <div>Quote ID: ${quote.id}</div>
-                                <div>Total: ${formatMoney(quote.finalTotal)}</div>
-                                <div>Status: ${quote.status || 'Pending'}</div>
-                            </div>
-                            <button onclick="loadQuote('${quote.id}')">Load Quote</button>
-                        </div>
-                    `).join('') || '<div>No quotes found</div>';
+                        `).join('');
+                    } else {
+                        quotesListDiv.innerHTML = '<div class="no-quotes">No quotes found</div>';
+                    }
                 } else {
-                    quotesListDiv.innerHTML = `<div class="error">Error loading quotes: ${event.data.error || 'Unknown error'}</div>`;
+                    console.error('Error in quotes response:', event.data);
+                    quotesListDiv.innerHTML = `
+                        <div class="error">
+                            Error loading quotes: ${event.data.error || 'Unknown error'}
+                        </div>`;
                 }
             }
         });
+
+        // Send message to Velo code
+        console.log('Sending getQuotes request');
+        window.parent.postMessage({
+            type: 'getQuotes'
+        }, '*');
 
         // Add close button functionality
         const closeBtn = modal.querySelector('.close');
         closeBtn.onclick = () => {
             modal.style.display = 'none';
             modal.remove();
+        };
+
+        // Add click outside modal to close
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+                modal.remove();
+            }
         };
 
     } catch (error) {
