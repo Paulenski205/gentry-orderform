@@ -1736,6 +1736,7 @@ async function loadSavedQuote(quote) {
     const createQuoteHeader = document.querySelector('#create-quote-container h2'); // Select the h2 element
     if (createQuoteHeader) {
         createQuoteHeader.textContent = `Edit Quote: ${quote.projectName}`;
+    }
 
     // 3. Update current room ID
     currentRoomId = 'room-1';
