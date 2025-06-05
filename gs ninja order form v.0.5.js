@@ -938,12 +938,7 @@ function calculateLinearFootage(dimensions) {
 function saveCurrentRoomData(roomId = currentRoomId) {
     console.log('Saving data for:', roomId);
 
-    const storageKey = roomId;
-    console.log('Using storage key:', storageKey);
-
-    // Get current options WITHOUT filtering out default values
-    const currentOptions = getSelectedOptions();
-
+    // Get current room data
     const roomData = {
         dimensions: {
             base: {
@@ -959,11 +954,20 @@ function saveCurrentRoomData(roomId = currentRoomId) {
                 wallD: document.getElementById('upper-wall-d').value || ''
             }
         },
-        options: currentOptions // Save ALL options, including defaults
+        options: getSelectedOptions()
     };
 
-    console.log('Saving room data:', roomData);
-    localStorage.setItem(storageKey, JSON.stringify(roomData));
+    console.log('Room data to save:', roomData);
+
+    // Save to localStorage
+    try {
+        localStorage.setItem(roomId, JSON.stringify(roomData));
+        console.log('Successfully saved room data');
+    } catch (error) {
+        console.error('Error saving room data:', error);
+    }
+
+    return roomData; // Return the data in case we need it
 }
 
 function loadRoomData(roomId) {
@@ -1029,7 +1033,7 @@ function setWallDimensions(section, dimensions) {
 }
 
 function getSelectedOptions() {
-    return {
+    const options = {
         boxConstruction: document.getElementById('box-construction').value,
         boxMaterial: document.getElementById('box-material').value,
         doorMaterial: document.getElementById('door-material').value,
@@ -1041,6 +1045,9 @@ function getSelectedOptions() {
         hardware: document.getElementById('hardware').value,
         edgeband: document.getElementById('edgeband').value
     };
+
+    console.log('Getting selected options:', options);
+    return options;
 }
 
 function setWallMeasurements(section, measurements) {
@@ -1131,26 +1138,40 @@ function saveQuote() {
 
 async function confirmSaveQuote() {
     setLoadingState(true);
-    const projectName = document.getElementById('project-name').value.trim();
-
     try {
+        const projectName = document.getElementById('project-name').value.trim();
+        
         if (!projectName) {
             throw new Error('Please enter a project name');
         }
 
-        // Gather quote data
+        // Gather room data - FIXED THIS PART
+        const roomsData = rooms.map((room, index) => {
+            const roomId = `room-${index + 1}`;
+            console.log(`Getting data for room ${roomId}`);
+            
+            // Get the saved room data
+            const savedData = localStorage.getItem(roomId);
+            console.log(`Saved data for ${roomId}:`, savedData);
+            
+            // Parse the saved data
+            const roomData = savedData ? JSON.parse(savedData) : null;
+            console.log(`Parsed data for ${roomId}:`, roomData);
+
+            return {
+                name: room,
+                data: roomData // This should now contain the actual room data
+            };
+        });
+
+        console.log('Collected room data:', roomsData);
+
+        // Create quote data
         const quoteData = {
             id: document.getElementById('quote-id')?.value || generateQuoteId(),
             projectName: projectName,
             timestamp: new Date().toISOString(),
-            rooms: rooms.map(room => {
-                const roomId = `room-${index + 1}`;
-                const roomData = JSON.parse(localStorage.getItem(roomId));
-                return {
-                    name: room,
-                    data: roomData
-                };
-            }),
+            rooms: roomsData,
             projectTotal: calculateProjectSubtotal(),
             tax: calculateTax(),
             taxType: document.getElementById('tax-type').value,
@@ -1161,10 +1182,12 @@ async function confirmSaveQuote() {
             finalTotal: calculateFinalTotal()
         };
 
-        console.log('Saving quote data:', quoteData);
+        console.log('Sending quote data:', quoteData);
 
-        // Use MessageSystem to send the save request
-        const result = await MessageSystem.sendMessage('saveQuote', { detail: quoteData });
+        // Send the save request using MessageSystem
+        const result = await MessageSystem.sendMessage('saveQuote', quoteData);
+
+        console.log('Save result:', result);
 
         if (!result || !result.success) {
             throw new Error(result?.error || 'Failed to save quote');
