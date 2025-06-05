@@ -1,51 +1,47 @@
 // Main JavaScript File
 
-// Add this at the top of your JavaScript file
-const messageHandlers = {
-    messageQueue: new Map(),
-    nextMessageId: 1,
+// Message Handling System (Improved)
+const MessageSystem = {
+    pendingRequests: new Map(),
 
-    sendMessage: function(type, data) {
+    sendMessage(type, data = {}) {
         return new Promise((resolve, reject) => {
-            const messageId = this.nextMessageId++;
-            
-            // Store the resolve/reject handlers
-            this.messageQueue.set(messageId, { resolve, reject });
-            
-            // Send the message to the parent (Wix) window
-            window.parent.postMessage({
-                messageId,
-                type,
-                data
-            }, '*');
+            const messageId = this.generateMessageId();
 
-            // Timeout after 10 seconds
+            this.pendingRequests.set(messageId, { resolve, reject, type });
+
+            window.parent.postMessage({ messageId, type, data }, '*');
+
+            // Timeout mechanism
             setTimeout(() => {
-                if (this.messageQueue.has(messageId)) {
-                    this.messageQueue.delete(messageId);
-                    reject(new Error('Request timed out'));
+                if (this.pendingRequests.has(messageId)) {
+                    this.pendingRequests.delete(messageId);
+                    reject(new Error(`Request timed out for ${type}`));
                 }
-            }, 10000);
+            }, 30000); // 30-second timeout
         });
+    },
+
+    handleResponse(event) {
+        const { messageId, success, result, error } = event.data;
+        const request = this.pendingRequests.get(messageId);
+
+        if (request) {
+            this.pendingRequests.delete(messageId);
+            if (success) {
+                request.resolve(result); // Resolve with the result
+            } else {
+                request.reject(new Error(error || 'Backend operation failed'));
+            }
+        }
+    },
+
+    generateMessageId() {
+        return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     }
 };
 
-// Add the message listener
-window.addEventListener('message', function(event) {
-    const { messageId, success, data, error } = event.data;
-    
-    // Look up the handlers for this message
-    const handlers = messageHandlers.messageQueue.get(messageId);
-    if (handlers) {
-        messageHandlers.messageQueue.delete(messageId);
-        if (success) {
-            handlers.resolve(data);
-        } else {
-            handlers.reject(new Error(error));
-        }
-    }
-});
-
+window.addEventListener('message', MessageSystem.handleResponse.bind(MessageSystem));
 
 // Constants and Initial Setup
 const TAX_RATE = 0.086; // 8.6%
@@ -128,11 +124,10 @@ async function showOrderHistory() {
     try {
         console.log('Fetching order history...');
 
-        // Create and show loading state
+        // Create and show the modal with loading state
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.id = 'orderHistoryModal';
-
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -146,63 +141,41 @@ async function showOrderHistory() {
                 </div>
             </div>
         `;
-
         document.body.appendChild(modal);
         modal.style.display = 'block';
 
-        // Add message listener for the response
-        const handleQuotesResponse = (event) => {
-            console.log('Received response in order history:', event.data);
+        // Use MessageSystem to get quotes
+        const quotes = await MessageSystem.sendMessage('getQuotes');
 
-            if (event.data.type === 'getQuotesResult') {
-                window.removeEventListener('message', handleQuotesResponse);
+        const quotesListDiv = modal.querySelector('.quotes-list');
 
-                const quotesListDiv = modal.querySelector('.quotes-list');
-                if (event.data.success && event.data.result) {
-                    const quotes = event.data.result;
-                    console.log('Rendering quotes:', quotes);
+        if (quotes && quotes.length > 0) {
+            // Render quotes
+            quotesListDiv.innerHTML = quotes.map(quote => `
+                <div class="quote-item" data-quote-id="${quote.id}">
+                    <div class="quote-header">
+                        <span class="project-name">${quote.projectName}</span>
+                        <span class="quote-date">${new Date(quote.timestamp).toLocaleDateString()}</span>
+                    </div>
+                    <div class="quote-details">
+                        <div>Quote ID: ${quote.id}</div>
+                        <div>Total: ${formatMoney(quote.finalTotal)}</div>
+                        <div>Status: ${quote.status || 'Pending'}</div>
+                    </div>
+                    <button onclick="loadQuote('${quote.id}')">Load Quote</button>
+                </div>
+            `).join('');
 
-                    // Update modal with quotes
-                    if (quotes.length > 0) {
-                        quotesListDiv.innerHTML = quotes.map(quote => `
-                            <div class="quote-item" data-quote-id="${quote.id}">
-                                <div class="quote-header">
-                                    <span class="project-name">${quote.projectName}</span>
-                                    <span class="quote-date">${new Date(quote.timestamp).toLocaleDateString()}</span>
-                                </div>
-                                <div class="quote-details">
-                                    <div>Quote ID: ${quote.id}</div>
-                                    <div>Total: ${formatMoney(quote.finalTotal)}</div>
-                                    <div>Status: ${quote.status || 'Pending'}</div>
-                                </div>
-                                <button onclick="loadQuote('${quote.id}')">Load Quote</button>
-                            </div>
-                        `).join('');
-                    } else {
-                        quotesListDiv.innerHTML = '<div class="no-quotes">No quotes found</div>';
-                    }
-                } else {
-                    console.error('Error in quotes response:', event.data);
-                    quotesListDiv.innerHTML = `
-                        <div class="error">
-                            Error loading quotes: ${event.data.error || 'Unknown error'}
-                        </div>`;
-                }
-            }
-        };
+        } else {
+            quotesListDiv.innerHTML = '<div class="no-quotes">No quotes found</div>';
+        }
 
-        window.addEventListener('message', handleQuotesResponse); // Add event listener *before* sending message
-
-        // Send message to Velo code
-        console.log('Sending getQuotes request');
-        window.parent.postMessage({ type: 'getQuotes' }, '*');
 
         // Add close button functionality
         const closeBtn = modal.querySelector('.close');
         closeBtn.onclick = () => {
             modal.style.display = 'none';
             modal.remove();
-            window.removeEventListener('message', handleQuotesResponse); // Remove listener on close
         };
 
         // Add click outside modal to close
@@ -210,13 +183,17 @@ async function showOrderHistory() {
             if (event.target === modal) {
                 modal.style.display = 'none';
                 modal.remove();
-                window.removeEventListener('message', handleQuotesResponse); // Remove listener on close
             }
         });
 
     } catch (error) {
         console.error('Error showing order history:', error);
-        showNotification('Error loading order history: ' + error.message, 'error');
+        const quotesListDiv = document.getElementById('orderHistoryModal')?.querySelector('.quotes-list');
+        if (quotesListDiv) {
+            quotesListDiv.innerHTML = `<div class="error">Error loading quotes: ${error.message || 'Unknown error'}</div>`;
+        } else {
+            showNotification('Error loading order history: ' + error.message, 'error');
+        }
     }
 }
 
@@ -1150,9 +1127,8 @@ function saveQuote() {
 async function confirmSaveQuote() {
     setLoadingState(true);
     const projectName = document.getElementById('project-name').value.trim();
-    
+
     try {
-        // Validate project name
         if (!projectName) {
             throw new Error('Please enter a project name');
         }
@@ -1211,43 +1187,25 @@ async function confirmSaveQuote() {
             finalTotal
         };
 
-        try {
-            // Save the quote using the page's exported function
-            const result = await window.$w.page.saveQuote(quoteData);
-            
-            // Log the response for debugging
-            console.log('Save quote response:', result);
+       // Use MessageSystem to send the saveQuote message
+        const result = await MessageSystem.sendMessage('saveQuote', quoteData);
 
-            // Check if we got a response
-            if (!result) {
-                throw new Error('No response from save operation');
-            }
+        if (!result || !result.success) {
+            throw new Error(result?.error || 'Failed to save quote');
+        }
 
-            // Success handling
-            showNotification('Quote saved successfully!', 'success');
-            updateLastSavedState();
-            cancelSaveQuote();
+        showNotification('Quote saved successfully!', 'success');
+        updateLastSavedState();
+        cancelSaveQuote();
 
-            // Update quote ID if it was generated
-            if (result.quoteId) {
-                document.getElementById('quote-id').value = result.quoteId;
-            }
-
-            // Optional: Log success details
-            console.log('Quote saved successfully:', {
-                id: quoteData.id,
-                projectName: quoteData.projectName,
-                timestamp: quoteData.timestamp
-            });
-
-        } catch (saveError) {
-            console.error('Error during save operation:', saveError);
-            throw new Error(`Failed to save quote: ${saveError.message}`);
+        // Update quote ID if it was generated
+        if (result.quoteId) {
+            document.getElementById('quote-id').value = result.quoteId;
         }
 
     } catch (error) {
         console.error('Save quote error:', error);
-        showNotification(error.message || 'Error saving quote', 'error');
+        showNotification('Error saving quote: ' + error.message, 'error');
     } finally {
         setLoadingState(false);
     }
@@ -1732,72 +1690,44 @@ function calculateTotalInstallationCost() {
 // Frontend JavaScript
 async function loadQuote(quoteId) {
     try {
-        // Send message directly (no messageHandlers needed)
-        window.parent.postMessage({
-            type: 'getQuoteById', // Use 'getQuoteById' to match Velo
-            quoteId: quoteId
-        }, '*');
+        // Use MessageSystem to send and receive messages
+        const quote = await MessageSystem.sendMessage('getQuoteById', { quoteId });
 
-        // Wait for response
-        const loadQuotePromise = new Promise((resolve, reject) => {
-            const handleLoadQuoteResponse = (event) => {
-                if (event.data.type === 'getQuoteByIdResult') { // Match response type
-                    window.removeEventListener('message', handleLoadQuoteResponse);
-                    if (event.data.success) {
-                        resolve(event.data.quote); // Resolve with the quote data
-                    } else {
-                        reject(new Error(event.data.error || 'Failed to load quote'));
-                    }
-                }
-            };
-            window.addEventListener('message', handleLoadQuoteResponse);
-
-            // Timeout for loadQuote operation
-            setTimeout(() => {
-                window.removeEventListener('message', handleLoadQuoteResponse);
-                reject(new Error('Load quote timed out'));
-            }, 30000); // Adjust timeout as needed
-        });
-
-        const quote = await loadQuotePromise;
-
-        // Update the form with the loaded quote data
-        if (quote) {
-            // 1. Update rooms array and localStorage
-            rooms = quote.rooms.map(room => room.name);
-            localStorage.setItem('rooms', JSON.stringify(rooms));
-
-            // 2. Save room data to localStorage
-            quote.rooms.forEach(room => {
-                localStorage.setItem(`room-${room.name.toLowerCase().replace(/\s+/g, '-')}`, JSON.stringify(room.data));
-            });
-
-            // 3. Update current room ID
-            currentRoomId = 'room-1';
-
-            // 4. Update UI
-            document.getElementById('quote-id').value = quote.id;
-            document.getElementById('tax-type').value = quote.taxType;
-            document.getElementById('installation-type').value = quote.installationType;
-            document.getElementById('installation-surcharge').value = quote.installationSurcharge;
-            document.getElementById('discount').value = quote.discount;
-
-            // 5. Initialize room selector and load first room
-            initializeRoomSelector();
-            loadRoomData(currentRoomId);
-
-            // 6. Close the order history modal
-            const modal = document.getElementById('orderHistoryModal');
-            if (modal) {
-                modal.style.display = 'none';
-                modal.remove();
-            }
-
-            // 7. Show the quote form
-            showCreateQuote();
+        if (!quote) {
+            throw new Error('Quote not found or invalid response from server');
         }
 
+        console.log('Loaded quote:', quote);
+
+        // Update the form with the loaded quote data
+        document.getElementById('quote-id').value = quote.id;
+        document.getElementById('project-name').value = quote.projectName;
+        document.getElementById('tax-type').value = quote.taxType;
+        document.getElementById('installation-type').value = quote.installationType;
+        document.getElementById('installation-surcharge').value = quote.installationSurcharge || '0.00'; // Handle potential missing values
+        document.getElementById('discount').value = quote.discount || '0.00'; // Handle potential missing values
+
+        // Update rooms and local storage
+        rooms = quote.rooms.map(room => room.name);
+        localStorage.setItem('rooms', JSON.stringify(rooms));
+        quote.rooms.forEach(room => {
+            localStorage.setItem(`room-${room.name.toLowerCase().replace(/\s+/g, '-')}`, JSON.stringify(room.data));
+        });
+
+        currentRoomId = 'room-1';
+        initializeRoomSelector();
+        loadRoomData(currentRoomId);
+
+        // Close order history modal and show create quote form
+        const orderHistoryModal = document.getElementById('orderHistoryModal');
+        if (orderHistoryModal) {
+            orderHistoryModal.style.display = 'none';
+            orderHistoryModal.remove();
+        }
+        showCreateQuote();
+
     } catch (error) {
+        console.error('Load quote error:', error);
         showNotification('Error loading quote: ' + error.message, 'error');
     }
 }
