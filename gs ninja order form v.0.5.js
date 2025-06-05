@@ -47,7 +47,6 @@ window.addEventListener('message', MessageSystem.handleResponse.bind(MessageSyst
 const TAX_RATE = 0.086; // 8.6%
 let currentQuoteId = localStorage.getItem('lastQuoteId') || 0;
 let rooms = []; // Initialize rooms here
-let rooms; // Declare rooms here
 let modal; // Declare modal here
 let closeBtn; // Declare closeBtn here
 let currentRoomId = 'room-1';
