@@ -1138,62 +1138,33 @@ async function confirmSaveQuote() {
             throw new Error('Please enter a project name');
         }
 
-        // Check if save function is available
-        if (typeof window.$w?.page?.saveQuote !== 'function') {
-            throw new Error('Save function not available. Please refresh the page.');
-        }
-
-        // Validate that there's at least one room with measurements
-        const hasValidRooms = rooms.some(room => {
-            const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
-            const roomData = JSON.parse(localStorage.getItem(roomId) || '{}');
-            const hasBaseMeasurements = Object.values(roomData?.dimensions?.base || {}).some(v => v);
-            const hasUpperMeasurements = Object.values(roomData?.dimensions?.upper || {}).some(v => v);
-            return hasBaseMeasurements || hasUpperMeasurements;
-        });
-
-        if (!hasValidRooms) {
-            throw new Error('At least one room must have measurements');
-        }
-
-        // Calculate all totals first to ensure they're valid
-        const projectTotal = calculateProjectSubtotal();
-        const tax = calculateTax();
-        const installationCost = calculateTotalInstallationCost();
-        const installationSurcharge = parseFloat(document.getElementById('installation-surcharge').value) || 0;
-        const discount = parseFloat(document.getElementById('discount').value) || 0;
-        const finalTotal = calculateFinalTotal();
-
-        // Validate calculations
-        if (isNaN(projectTotal) || isNaN(tax) || isNaN(installationCost) || isNaN(finalTotal)) {
-            throw new Error('Invalid calculation results');
-        }
-
         // Gather quote data
         const quoteData = {
             id: document.getElementById('quote-id')?.value || generateQuoteId(),
             projectName: projectName,
             timestamp: new Date().toISOString(),
             rooms: rooms.map(room => {
-                const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
+                const roomId = `room-${index + 1}`;
                 const roomData = JSON.parse(localStorage.getItem(roomId));
                 return {
                     name: room,
                     data: roomData
                 };
             }),
-            projectTotal,
-            tax,
+            projectTotal: calculateProjectSubtotal(),
+            tax: calculateTax(),
             taxType: document.getElementById('tax-type').value,
             installationType: document.getElementById('installation-type').value,
-            installationCost,
-            installationSurcharge,
-            discount,
-            finalTotal
+            installationCost: calculateTotalInstallationCost(),
+            installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
+            discount: parseFloat(document.getElementById('discount').value) || 0,
+            finalTotal: calculateFinalTotal()
         };
 
-       // Use MessageSystem to send the saveQuote message
-        const result = await MessageSystem.sendMessage('saveQuote', quoteData);
+        console.log('Saving quote data:', quoteData);
+
+        // Use MessageSystem to send the save request
+        const result = await MessageSystem.sendMessage('saveQuote', { detail: quoteData });
 
         if (!result || !result.success) {
             throw new Error(result?.error || 'Failed to save quote');
@@ -1209,7 +1180,7 @@ async function confirmSaveQuote() {
         }
 
     } catch (error) {
-        console.error('Save quote error:', error);
+        console.error('Save error:', error);
         showNotification('Error saving quote: ' + error.message, 'error');
     } finally {
         setLoadingState(false);
