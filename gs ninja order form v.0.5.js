@@ -967,23 +967,24 @@ function saveCurrentRoomData(roomId = currentRoomId) {
 }
 
 function loadRoomData(roomId) {
-    console.log('Loading room:', roomId);
+    console.log('Loading room data for:', roomId);
 
     // Reset form fields
     setWallMeasurements('base', []);
     setWallMeasurements('upper', []);
 
     // Load the saved data
-    console.log("Loading room:", roomId);
     const savedData = localStorage.getItem(roomId);
-    console.log('Storage key:', roomId);
-    console.log('Loaded data:', savedData);
+    console.log('Loaded room data from storage:', savedData);
+
     if (savedData) {
         const roomData = JSON.parse(savedData);
         console.log('Parsed room data:', roomData);
         
         // Set dimensions
         if (roomData.dimensions) {
+            console.log('Setting dimensions:', roomData.dimensions);
+            
             // Set base walls
             if (roomData.dimensions.base) {
                 document.getElementById('base-wall-a').value = roomData.dimensions.base.wallA || '';
@@ -1003,15 +1004,12 @@ function loadRoomData(roomId) {
 
         // Set options
         if (roomData.options) {
-            console.log('Setting options from room data:', roomData.options);
+            console.log('Setting options:', roomData.options);
             setSelectedOptions(roomData.options);
-        } else {
-            console.log('No options found in room data');
-            setSelectedOptions({}); // Reset options if none found
         }
     } else {
         console.log('No saved data found for room:', roomId);
-        setSelectedOptions({}); // Reset options for new room
+        setSelectedOptions({});
     }
 
     // Update room name
@@ -1722,17 +1720,21 @@ async function loadQuote(quoteId) {
 }
 
 async function loadSavedQuote(quote) {
+    console.log('Loading saved quote:', quote);
+
     // 1. Update rooms array and localStorage
     rooms = quote.rooms.map(room => room.name);
     localStorage.setItem('rooms', JSON.stringify(rooms));
 
-    // 2. Save room data to localStorage
-    quote.rooms.forEach(room => {
-        localStorage.setItem(`room-${room.name.toLowerCase().replace(/\s+/g, '-')}`, JSON.stringify(room.data));
+    // 2. Save room data to localStorage - FIXED THIS PART
+    quote.rooms.forEach((room, index) => {
+        const roomId = `room-${index + 1}`; // Use index + 1 for room IDs
+        console.log('Saving room data:', roomId, room);
+        localStorage.setItem(roomId, JSON.stringify(room.data));
     });
 
- // Update the title header with the project name
-    const createQuoteHeader = document.querySelector('#create-quote-container h2'); // Select the h2 element
+    // Update the title header with the project name
+    const createQuoteHeader = document.querySelector('#create-quote-container h2');
     if (createQuoteHeader) {
         createQuoteHeader.textContent = `Edit Quote: ${quote.projectName}`;
     }
@@ -1749,10 +1751,12 @@ async function loadSavedQuote(quote) {
 
     // 5. Initialize room selector and load first room
     initializeRoomSelector();
+    
+    // 6. Load the room data
     loadRoomData(currentRoomId);
 
-    // 6. Show the quote form *without* clearing data
-    showCreateQuote(false); // Pass false to prevent clearing data
+    // 7. Show the quote form *without* clearing data
+    showCreateQuote(false);
 }
 
 function calculateTax() {
