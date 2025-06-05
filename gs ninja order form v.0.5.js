@@ -1729,50 +1729,74 @@ function calculateTotalInstallationCost() {
     return total;
 }
 
+// Frontend JavaScript
 async function loadQuote(quoteId) {
     try {
-        const quote = await messageHandlers.sendMessage('GET_QUOTE', { quoteId });
-        
-        if (!quote) {
-            throw new Error('Quote not found');
-        }
-        
-        // Update rooms array and localStorage
-        rooms = quote.rooms.map(room => room.name);
-        localStorage.setItem('rooms', JSON.stringify(rooms));
-        
-        // Save room data to localStorage
-        quote.rooms.forEach(room => {
-            localStorage.setItem(
-                `room-${room.name.toLowerCase().replace(/\s+/g, '-')}`,
-                JSON.stringify(room.data)
-            );
+        // Send message directly (no messageHandlers needed)
+        window.parent.postMessage({
+            type: 'getQuoteById', // Use 'getQuoteById' to match Velo
+            quoteId: quoteId
+        }, '*');
+
+        // Wait for response
+        const loadQuotePromise = new Promise((resolve, reject) => {
+            const handleLoadQuoteResponse = (event) => {
+                if (event.data.type === 'getQuoteByIdResult') { // Match response type
+                    window.removeEventListener('message', handleLoadQuoteResponse);
+                    if (event.data.success) {
+                        resolve(event.data.quote); // Resolve with the quote data
+                    } else {
+                        reject(new Error(event.data.error || 'Failed to load quote'));
+                    }
+                }
+            };
+            window.addEventListener('message', handleLoadQuoteResponse);
+
+            // Timeout for loadQuote operation
+            setTimeout(() => {
+                window.removeEventListener('message', handleLoadQuoteResponse);
+                reject(new Error('Load quote timed out'));
+            }, 30000); // Adjust timeout as needed
         });
-        
-        // Update current room ID
-        currentRoomId = 'room-1';
-        
-        // Update UI
-        document.getElementById('quote-id').value = quote.id;
-        document.getElementById('tax-type').value = quote.taxType;
-        document.getElementById('installation-type').value = quote.installationType;
-        document.getElementById('installation-surcharge').value = quote.installationSurcharge;
-        document.getElementById('discount').value = quote.discount;
-        
-        // Initialize room selector and load first room
-        initializeRoomSelector();
-        loadRoomData(currentRoomId);
-        
-        // Close the order history modal
-        const modal = document.getElementById('orderHistoryModal');
-        if (modal) {
-            modal.style.display = 'none';
-            modal.remove();
+
+        const quote = await loadQuotePromise;
+
+        // Update the form with the loaded quote data
+        if (quote) {
+            // 1. Update rooms array and localStorage
+            rooms = quote.rooms.map(room => room.name);
+            localStorage.setItem('rooms', JSON.stringify(rooms));
+
+            // 2. Save room data to localStorage
+            quote.rooms.forEach(room => {
+                localStorage.setItem(`room-${room.name.toLowerCase().replace(/\s+/g, '-')}`, JSON.stringify(room.data));
+            });
+
+            // 3. Update current room ID
+            currentRoomId = 'room-1';
+
+            // 4. Update UI
+            document.getElementById('quote-id').value = quote.id;
+            document.getElementById('tax-type').value = quote.taxType;
+            document.getElementById('installation-type').value = quote.installationType;
+            document.getElementById('installation-surcharge').value = quote.installationSurcharge;
+            document.getElementById('discount').value = quote.discount;
+
+            // 5. Initialize room selector and load first room
+            initializeRoomSelector();
+            loadRoomData(currentRoomId);
+
+            // 6. Close the order history modal
+            const modal = document.getElementById('orderHistoryModal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.remove();
+            }
+
+            // 7. Show the quote form
+            showCreateQuote();
         }
-        
-        // Show the quote form
-        showCreateQuote();
-        
+
     } catch (error) {
         showNotification('Error loading quote: ' + error.message, 'error');
     }
