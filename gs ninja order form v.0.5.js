@@ -1690,7 +1690,6 @@ function calculateTotalInstallationCost() {
 // Frontend JavaScript
 async function loadQuote(quoteId) {
     try {
-        // Use MessageSystem to send and receive messages
         const quote = await MessageSystem.sendMessage('getQuoteById', { quoteId });
 
         if (!quote) {
@@ -1698,6 +1697,12 @@ async function loadQuote(quoteId) {
         }
 
         console.log('Loaded quote:', quote);
+
+        // Check if quote.rooms is an array before mapping
+        if (!Array.isArray(quote.rooms)) {
+            console.error('Invalid rooms data:', quote.rooms);
+            throw new Error('Invalid rooms data in loaded quote');
+        }
 
         // Update the form with the loaded quote data
         document.getElementById('quote-id').value = quote.id;
