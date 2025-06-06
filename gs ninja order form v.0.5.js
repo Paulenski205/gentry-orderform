@@ -1027,10 +1027,11 @@ function saveQuote() {
     }
 }
 
-async function confirmSaveQuote() {
+async function confirmSaveQuote(existingProjectName = null) {
     setLoadingState(true);
     try {
-        const projectName = document.getElementById('project-name').value.trim();
+        // If no existing name provided, get it from the input
+        const projectName = existingProjectName || document.getElementById('project-name').value.trim();
         
         if (!projectName) {
             throw new Error('Please enter a project name');
@@ -1050,9 +1051,8 @@ async function confirmSaveQuote() {
             };
         });
 
-        // Create quote data
         const quoteData = {
-            id: document.getElementById('quote-id')?.value || generateQuoteId(),
+            id: document.getElementById('quote-id').value || generateQuoteId(),
             projectName: projectName,
             timestamp: new Date().toISOString(),
             rooms: roomsData,
@@ -1066,15 +1066,10 @@ async function confirmSaveQuote() {
             finalTotal: calculateFinalTotal()
         };
 
-        console.log('Preparing to save quote data:', quoteData);
+        console.log('Sending quote data:', quoteData);
 
         // Use MessageSystem to send the save request
-        const result = await MessageSystem.sendMessage('saveQuote', {
-            type: 'saveQuote',
-            data: quoteData  // Make sure we're sending the data properly
-        });
-
-        console.log('Save result:', result);
+        const result = await MessageSystem.sendMessage('saveQuote', quoteData);
 
         if (!result || !result.success) {
             throw new Error(result?.error || 'Failed to save quote');
@@ -1082,11 +1077,10 @@ async function confirmSaveQuote() {
 
         showNotification('Quote saved successfully!', 'success');
         updateLastSavedState();
-        cancelSaveQuote();
 
-        // Update quote ID if it was generated
-        if (result.quoteId) {
-            document.getElementById('quote-id').value = result.quoteId;
+        // Only close the modal if we're saving a new quote
+        if (!existingProjectName) {
+            cancelSaveQuote();
         }
 
     } catch (error) {
@@ -1096,6 +1090,26 @@ async function confirmSaveQuote() {
         setLoadingState(false);
     }
 }
+
+
+// Add this new saveQuote function
+window.saveQuote = function() {
+    const existingQuoteId = document.getElementById('quote-id').value;
+    const existingProjectName = document.getElementById('project-name').value;
+
+    if (existingQuoteId && existingProjectName) {
+        // This is an existing quote - show overwrite confirmation
+        if (confirm(`Are you sure you want to overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
+            confirmSaveQuote(existingProjectName); // Pass the existing name
+        }
+    } else {
+        // This is a new quote - show the save modal
+        const modal = document.getElementById('saveQuoteModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    }
+};
 
 // New function to cancel save operation
 function cancelSaveQuote() {
@@ -1318,12 +1332,23 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.appendChild(saveQuoteModal);
 
     // Define modal-related functions on window object
-    window.saveQuote = function() {
+window.saveQuote = function() {
+    const existingQuoteId = document.getElementById('quote-id').value;
+    const existingProjectName = document.getElementById('project-name').value;
+
+    if (existingQuoteId && existingProjectName) {
+        // This is an existing quote - show overwrite confirmation
+        if (confirm(`Are you sure you want to overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
+            confirmSaveQuote(existingProjectName); // Pass the existing name
+        }
+    } else {
+        // This is a new quote - show the save modal
         const modal = document.getElementById('saveQuoteModal');
         if (modal) {
             modal.style.display = 'block';
         }
-    };
+    }
+};
 
     window.cancelSaveQuote = function() {
         const modal = document.getElementById('saveQuoteModal');
@@ -1688,6 +1713,7 @@ async function loadSavedQuote(quote) {
     document.getElementById('installation-type').value = quote.installationType;
     document.getElementById('installation-surcharge').value = quote.installationSurcharge || '0.00';
     document.getElementById('discount').value = quote.discount || '0.00';
+document.getElementById('project-name').value = quote.projectName;
 
     // 5. Initialize room selector and load first room
     initializeRoomSelector();
