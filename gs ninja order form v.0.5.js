@@ -1019,65 +1019,6 @@ function setWallMeasurements(section, measurements) {
     });
 }
 
-function setSelectedOptions(options) {
-    console.log('Setting options:', options);
-
-    // Get all select elements in the options form
-    const selects = document.querySelectorAll('.options-form select');
-
-    // Reset all selects first
-    selects.forEach(select => {
-        select.value = '-'; // Or whatever your default value is
-    });
-
-    // Reset all text inputs
-    const inputs = document.querySelectorAll('.options-form input[type="text"]');
-    inputs.forEach(input => {
-        input.value = '';
-    });
-
-    // Map the option keys to their corresponding element IDs
-    const optionMapping = {
-        'boxConstruction': 'box-construction',
-        'boxMaterial': 'box-material',
-        'doorMaterial': 'door-material',
-        'doorStyle': 'door-style',
-        'finish': 'finish',
-        'interiorFinish': 'interior-finish',
-        'drawerBox': 'drawer-box',
-        'drawerStyle': 'drawer-style',
-        'hardware': 'hardware',
-        'edgeband': 'edgeband'
-    };
-
-    // Set the values for each option, verifying select options
-    if (options) {
-        Object.entries(options).forEach(([key, value]) => {
-            if (value && value !== '-') {
-                const elementId = optionMapping[key] || key;
-                const element = document.getElementById(elementId);
-                if (element) {
-                    if (element.tagName === 'SELECT') {
-                        // Check if the value is a valid option for select elements
-                        if (Array.from(element.options).some(option => option.value === value)) {
-                            element.value = value;
-                            console.log(`Setting ${elementId} to ${value}`);
-                        } else {
-                            console.warn(`Invalid option value "${value}" for select element "${elementId}". Setting to default.`);
-                            element.value = '-'; // Set to default if invalid
-                        }
-                    } else { // For input elements, just set the value
-                        element.value = value;
-                        console.log(`Setting ${elementId} to ${value}`);
-                    }
-                } else {
-                    console.warn(`Element with ID "${elementId}" not found.`);
-                }
-            }
-        });
-    }
-}
-
 // Save and Back Button Handling
 function saveQuote() {
     const modal = document.getElementById('saveQuoteModal');
@@ -1848,6 +1789,20 @@ function setLoadingState(isLoading) {
     }
 }
 
+// Define optionMapping at the top level, outside any function
+const optionMapping = {
+    'boxConstruction': 'box-construction',
+    'boxMaterial': 'box-material',
+    'doorMaterial': 'door-material',
+    'doorStyle': 'door-style',
+    'finish': 'finish',
+    'interiorFinish': 'interior-finish',
+    'drawerBox': 'drawer-box',
+    'drawerStyle': 'drawer-style',
+    'hardware': 'hardware',
+    'edgeband': 'edgeband'
+};
+
 function setSelectedOptions(options = {}) {
     console.log('Setting options:', options);
 
@@ -1866,14 +1821,29 @@ function setSelectedOptions(options = {}) {
     });
 
     // Set the values for each option
-    Object.entries(options).forEach(([key, value]) => {
-        if (value) { // Only set if we have a value
-            const elementId = optionMapping[key] || key;
-            const element = document.getElementById(elementId);
-            if (element) {
-                element.value = value;
-                console.log(`Set ${elementId} to ${value}`);
+    if (options) {
+        Object.entries(options).forEach(([key, value]) => {
+            if (value && value !== '-') {
+                const elementId = optionMapping[key] || key;
+                const element = document.getElementById(elementId);
+                if (element) {
+                    if (element.tagName === 'SELECT') {
+                        // Check if the value is a valid option for select elements
+                        if (Array.from(element.options).some(option => option.value === value)) {
+                            element.value = value;
+                            console.log(`Set ${elementId} to ${value}`);
+                        } else {
+                            console.warn(`Invalid option value "${value}" for select element "${elementId}". Setting to default.`);
+                            element.value = '-'; // Set to default if invalid
+                        }
+                    } else { // For input elements, just set the value
+                        element.value = value;
+                        console.log(`Set ${elementId} to ${value}`);
+                    }
+                } else {
+                    console.warn(`Element with ID "${elementId}" not found.`);
+                }
             }
-        }
-    });
+        });
+    }
 }
