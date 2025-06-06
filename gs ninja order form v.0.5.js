@@ -527,12 +527,17 @@ try {
     // Calculate costs for each room
     rooms.forEach((roomName, index) => {
         const roomId = `room-${index + 1}`; // Correct format
-const savedData = localStorage.getItem(roomId); // Correct usage
-const roomData = savedData ? JSON.parse(savedData) : {}; // Parse if data exists
-        
-        // Get room measurements from stored data
-        const baseWalls = roomData.dimensions?.base || {};
-        const upperWalls = roomData.dimensions?.upper || {};
+        const savedData = localStorage.getItem(roomId);
+            const roomData = savedData ? JSON.parse(savedData) : {
+                dimensions: {
+                    base: {}, upper: {}
+                },
+                options: {}
+            };
+
+            // Get room measurements from stored data
+            const baseWalls = roomData.dimensions?.base || {};
+            const upperWalls = roomData.dimensions?.upper || {};
         
         // Calculate linear footage from stored measurements
         const baseLinearFoot = Object.values(baseWalls).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
@@ -1275,11 +1280,40 @@ function cancelClearData() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize rooms with default data
     rooms = JSON.parse(localStorage.getItem('rooms')) || ['Room 1'];
+    
+    // Initialize default room data if it doesn't exist
+    rooms.forEach((room, index) => {
+        const roomId = `room-${index + 1}`;
+        if (!localStorage.getItem(roomId)) {
+            const defaultRoomData = {
+                dimensions: {
+                    base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+                    upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
+                },
+                options: {
+                    boxConstruction: '',
+                    boxMaterial: '',
+                    doorMaterial: '',
+                    doorStyle: '',
+                    finish: '',
+                    interiorFinish: '',
+                    drawerBox: '',
+                    drawerStyle: '',
+                    hardware: '',
+                    edgeband: ''
+                }
+            };
+            localStorage.setItem(roomId, JSON.stringify(defaultRoomData));
+        }
+    });
+
     modal = document.getElementById('roomManageModal');
     closeBtn = document.querySelector('#roomManageModal .close');
     currentRoomId = 'room-1';
 
+    // Set initial display states
     document.getElementById('welcome-container').style.display = 'block';
     document.getElementById('main-menu-container').style.display = 'none';
     document.getElementById('create-quote-container').style.display = 'none';
@@ -1358,67 +1392,70 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-window.confirmSaveQuote = async function() {
-    const projectName = document.getElementById('project-name').value.trim();
-    
-    try {
-        if (!projectName) {
-            showNotification('Please enter a project name', 'error');
-            return;
-        }
+    window.confirmSaveQuote = async function() {
+        const projectName = document.getElementById('project-name').value.trim();
+        
+        try {
+            if (!projectName) {
+                showNotification('Please enter a project name', 'error');
+                return;
+            }
 
-        setLoadingState(true);
+            setLoadingState(true);
 
-        const quoteData = {
-            id: document.getElementById('quote-id')?.value || generateQuoteId(),
-            projectName: projectName,
-            rooms: rooms.map(room => {
-                const roomId = `room-${room.toLowerCase().replace(/\s+/g, '-')}`;
-                const roomData = JSON.parse(localStorage.getItem(roomId));
+            // Gather room data
+            const roomsData = rooms.map((room, index) => {
+                const roomId = `room-${index + 1}`;
+                const savedData = localStorage.getItem(roomId);
+                const roomData = savedData ? JSON.parse(savedData) : null;
+                
+                console.log(`Room ${roomId} data:`, roomData);
+                
                 return {
                     name: room,
                     data: roomData
                 };
-            }),
-            projectTotal: calculateProjectSubtotal(),
-            tax: calculateTax(),
-            taxType: document.getElementById('tax-type').value,
-            installationType: document.getElementById('installation-type').value,
-            installationCost: calculateTotalInstallationCost(),
-            installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
-            discount: parseFloat(document.getElementById('discount').value) || 0,
-            finalTotal: calculateFinalTotal()
-        };
+            });
 
-        // Send message to Velo code
-        window.parent.postMessage({
-            type: 'saveQuote',
-            detail: quoteData
-        }, '*');
+            const quoteData = {
+                id: document.getElementById('quote-id')?.value || generateQuoteId(),
+                projectName: projectName,
+                timestamp: new Date().toISOString(),
+                rooms: roomsData,
+                projectTotal: calculateProjectSubtotal(),
+                tax: calculateTax(),
+                taxType: document.getElementById('tax-type').value,
+                installationType: document.getElementById('installation-type').value,
+                installationCost: calculateTotalInstallationCost(),
+                installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
+                discount: parseFloat(document.getElementById('discount').value) || 0,
+                finalTotal: calculateFinalTotal()
+            };
 
-        showNotification('Quote saved successfully!', 'success');
-        updateLastSavedState();
-        cancelSaveQuote();
+            console.log('Sending quote data:', quoteData);
 
-    } catch (error) {
-        console.error('Save error:', error);
-        showNotification('Error saving quote: ' + error.message, 'error');
-    } finally {
-        setLoadingState(false);
-    }
-};
+            // Use MessageSystem to send the save request
+            const result = await MessageSystem.sendMessage('saveQuote', quoteData);
 
-    if (closeBtn) {
-        closeBtn.onclick = closeModal;
-    } else {
-        console.error("Close button not found in room management modal!");
-    }
+            if (!result || !result.success) {
+                throw new Error(result?.error || 'Failed to save quote');
+            }
 
+            showNotification('Quote saved successfully!', 'success');
+            updateLastSavedState();
+            cancelSaveQuote();
+
+        } catch (error) {
+            console.error('Save error:', error);
+            showNotification('Error saving quote: ' + error.message, 'error');
+        } finally {
+            setLoadingState(false);
+        }
+    };
+
+    // Initialize the UI
     initializeRoomSelector();
     initializeEventListeners();
-    loadRoomData(currentRoomId);
-    updateLinearFootage();
-    updateCostBreakdown();
 
     // Add event listeners
     const clearDataButton = document.getElementById('clear-data-button');
@@ -1426,7 +1463,7 @@ window.confirmSaveQuote = async function() {
         clearDataButton.addEventListener('click', showClearConfirmation);
     }
     document.getElementById('back-button')?.addEventListener('click', handleBack);
-    document.getElementById('save-quote')?.addEventListener('click', window.saveQuote); // Updated to use window.saveQuote
+    document.getElementById('save-quote')?.addEventListener('click', window.saveQuote);
     document.getElementById('tax-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-surcharge').addEventListener('input', updateCostBreakdown);
@@ -1730,58 +1767,49 @@ function loadRoomData(roomId) {
     const savedData = localStorage.getItem(roomId);
     console.log('Loaded room data from storage:', savedData);
 
-    if (savedData) {
-        try {
-            const roomData = JSON.parse(savedData);
-            console.log('Parsed room data:', roomData);
-
-            // Set dimensions with default empty values
-            const dimensions = roomData.dimensions || {
-                base: { wallA: '', wallB: '', wallC: '', wallD: '' },
-                upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
-            };
-
-            // Set base walls
-            if (dimensions.base) {
-                document.getElementById('base-wall-a').value = dimensions.base.wallA || '';
-                document.getElementById('base-wall-b').value = dimensions.base.wallB || '';
-                document.getElementById('base-wall-c').value = dimensions.base.wallC || '';
-                document.getElementById('base-wall-d').value = dimensions.base.wallD || '';
-            }
-            
-            // Set upper walls
-            if (dimensions.upper) {
-                document.getElementById('upper-wall-a').value = dimensions.upper.wallA || '';
-                document.getElementById('upper-wall-b').value = dimensions.upper.wallB || '';
-                document.getElementById('upper-wall-c').value = dimensions.upper.wallC || '';
-                document.getElementById('upper-wall-d').value = dimensions.upper.wallD || '';
-            }
-
-            // Set options with default empty values
-            const options = roomData.options || {
-                boxConstruction: '',
-                boxMaterial: '',
-                doorMaterial: '',
-                doorStyle: '',
-                finish: '',
-                interiorFinish: '',
-                drawerBox: '',
-                drawerStyle: '',
-                hardware: '',
-                edgeband: ''
-            };
-
-            console.log('Setting options:', options);
-            setSelectedOptions(options);
-
-        } catch (error) {
-            console.error('Error parsing room data:', error);
-            setSelectedOptions({}); // Reset options on error
+    const defaultRoomData = {
+        dimensions: {
+            base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+            upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
+        },
+        options: {
+            boxConstruction: '',
+            boxMaterial: '',
+            doorMaterial: '',
+            doorStyle: '',
+            finish: '',
+            interiorFinish: '',
+            drawerBox: '',
+            drawerStyle: '',
+            hardware: '',
+            edgeband: ''
         }
-    } else {
-        console.log('No saved data found for room:', roomId);
-        setSelectedOptions({}); // Reset options for new room
+    };
+
+    const roomData = savedData ? JSON.parse(savedData) : defaultRoomData;
+    console.log('Using room data:', roomData);
+
+    // Set dimensions
+    if (roomData.dimensions) {
+        // Set base walls
+        if (roomData.dimensions.base) {
+            document.getElementById('base-wall-a').value = roomData.dimensions.base.wallA || '';
+            document.getElementById('base-wall-b').value = roomData.dimensions.base.wallB || '';
+            document.getElementById('base-wall-c').value = roomData.dimensions.base.wallC || '';
+            document.getElementById('base-wall-d').value = roomData.dimensions.base.wallD || '';
+        }
+        
+        // Set upper walls
+        if (roomData.dimensions.upper) {
+            document.getElementById('upper-wall-a').value = roomData.dimensions.upper.wallA || '';
+            document.getElementById('upper-wall-b').value = roomData.dimensions.upper.wallB || '';
+            document.getElementById('upper-wall-c').value = roomData.dimensions.upper.wallC || '';
+            document.getElementById('upper-wall-d').value = roomData.dimensions.upper.wallD || '';
+        }
     }
+
+    // Set options
+    setSelectedOptions(roomData.options || {});
 
     // Update room name
     const roomIndex = parseInt(roomId.replace('room-', '')) - 1;
