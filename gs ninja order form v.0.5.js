@@ -1145,26 +1145,19 @@ async function confirmSaveQuote() {
             throw new Error('Please enter a project name');
         }
 
-        // Gather room data - FIXED THIS PART
+        // Gather room data
         const roomsData = rooms.map((room, index) => {
             const roomId = `room-${index + 1}`;
-            console.log(`Getting data for room ${roomId}`);
-            
-            // Get the saved room data
             const savedData = localStorage.getItem(roomId);
-            console.log(`Saved data for ${roomId}:`, savedData);
-            
-            // Parse the saved data
             const roomData = savedData ? JSON.parse(savedData) : null;
-            console.log(`Parsed data for ${roomId}:`, roomData);
-
+            
+            console.log(`Room ${roomId} data:`, roomData);
+            
             return {
                 name: room,
-                data: roomData // This should now contain the actual room data
+                data: roomData
             };
         });
-
-        console.log('Collected room data:', roomsData);
 
         // Create quote data
         const quoteData = {
@@ -1182,10 +1175,13 @@ async function confirmSaveQuote() {
             finalTotal: calculateFinalTotal()
         };
 
-        console.log('Sending quote data:', quoteData);
+        console.log('Preparing to save quote data:', quoteData);
 
-        // Send the save request using MessageSystem
-        const result = await MessageSystem.sendMessage('saveQuote', quoteData);
+        // Use MessageSystem to send the save request
+        const result = await MessageSystem.sendMessage('saveQuote', {
+            type: 'saveQuote',
+            data: quoteData  // Make sure we're sending the data properly
+        });
 
         console.log('Save result:', result);
 
