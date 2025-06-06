@@ -1027,96 +1027,6 @@ function saveQuote() {
     }
 }
 
-
-async function confirmSaveQuote(existingProjectName = null) {
-    setLoadingState(true);
-    try {
-        const projectName = existingProjectName || document.getElementById('project-name').value.trim();
-        
-        if (!projectName) {
-            throw new Error('Please enter a project name');
-        }
-
-        // Gather room data
-        const roomsData = rooms.map((room, index) => {
-            const roomId = `room-${index + 1}`;
-            const savedData = localStorage.getItem(roomId);
-            const roomData = savedData ? JSON.parse(savedData) : null;
-            
-            console.log(`Room ${roomId} data:`, roomData);
-            
-            return {
-                name: room,
-                data: roomData
-            };
-        });
-
-        const quoteData = {
-            id: document.getElementById('quote-id').value || generateQuoteId(),
-            projectName: projectName,
-            timestamp: new Date().toISOString(),
-            rooms: roomsData,
-            projectTotal: calculateProjectSubtotal(),
-            tax: calculateTax(),
-            taxType: document.getElementById('tax-type').value,
-            installationType: document.getElementById('installation-type').value,
-            installationCost: calculateTotalInstallationCost(),
-            installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
-            discount: parseFloat(document.getElementById('discount').value) || 0,
-            finalTotal: calculateFinalTotal()
-        };
-
-        console.log('Sending quote data:', quoteData);
-
-        // Use MessageSystem to send the save request
-        const result = await MessageSystem.sendMessage('saveQuote', quoteData);
-
-        if (!result || !result.success) {
-            throw new Error(result?.error || 'Failed to save quote');
-        }
-
-        // Show appropriate message
-        showNotification(
-            result.isUpdate 
-                ? 'Quote updated successfully!' 
-                : 'Quote saved successfully!',
-            'success'
-        );
-        
-        updateLastSavedState();
-
-        // Only close the modal if we're saving a new quote
-        if (!existingProjectName) {
-            cancelSaveQuote();
-        }
-
-    } catch (error) {
-        console.error('Save error:', error);
-        showNotification('Error saving quote: ' + error.message, 'error');
-    } finally {
-        setLoadingState(false);
-    }
-}
-
-// Add this new saveQuote function
-window.saveQuote = function() {
-    const existingQuoteId = document.getElementById('quote-id').value;
-    const existingProjectName = document.getElementById('project-name').value;
-
-    if (existingQuoteId && existingProjectName) {
-        // This is an existing quote - show overwrite confirmation
-        if (confirm(`Are you sure you want to overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
-            confirmSaveQuote(existingProjectName); // Pass the existing name
-        }
-    } else {
-        // This is a new quote - show the save modal
-        const modal = document.getElementById('saveQuoteModal');
-        if (modal) {
-            modal.style.display = 'block';
-        }
-    }
-};
-
 // New function to cancel save operation
 function cancelSaveQuote() {
     const modal = document.getElementById('saveQuoteModal');
@@ -1364,16 +1274,16 @@ window.saveQuote = function() {
         }
     };
 
-    window.confirmSaveQuote = async function() {
-        const projectName = document.getElementById('project-name').value.trim();
-        
-        try {
-            if (!projectName) {
-                showNotification('Please enter a project name', 'error');
-                return;
-            }
+    window.confirmSaveQuote = async function(existingProjectName = null) {
+    const projectName = existingProjectName || document.getElementById('project-name').value.trim();
+    
+    try {
+        if (!projectName) {
+            showNotification('Please enter a project name', 'error');
+            return;
+        }
 
-            setLoadingState(true);
+        setLoadingState(true);
 
             // Gather room data
             const roomsData = rooms.map((room, index) => {
@@ -1413,17 +1323,26 @@ window.saveQuote = function() {
                 throw new Error(result?.error || 'Failed to save quote');
             }
 
-            showNotification('Quote saved successfully!', 'success');
-            updateLastSavedState();
-            cancelSaveQuote();
+            // Show appropriate message based on whether it's an update or new quote
+        showNotification(
+            existingProjectName ? 'Quote updated successfully!' : 'Quote saved successfully!',
+            'success'
+        );
+        
+        updateLastSavedState();
 
-        } catch (error) {
-            console.error('Save error:', error);
-            showNotification('Error saving quote: ' + error.message, 'error');
-        } finally {
-            setLoadingState(false);
+        // Only close the modal if we're saving a new quote
+        if (!existingProjectName) {
+            cancelSaveQuote();
         }
-    };
+
+    } catch (error) {
+        console.error('Save error:', error);
+        showNotification('Error saving quote: ' + error.message, 'error');
+    } finally {
+        setLoadingState(false);
+    }
+};
 
     // Initialize the UI
     initializeRoomSelector();
