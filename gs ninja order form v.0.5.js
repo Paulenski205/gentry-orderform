@@ -1027,10 +1027,10 @@ function saveQuote() {
     }
 }
 
+
 async function confirmSaveQuote(existingProjectName = null) {
     setLoadingState(true);
     try {
-        // If no existing name provided, get it from the input
         const projectName = existingProjectName || document.getElementById('project-name').value.trim();
         
         if (!projectName) {
@@ -1075,7 +1075,14 @@ async function confirmSaveQuote(existingProjectName = null) {
             throw new Error(result?.error || 'Failed to save quote');
         }
 
-        showNotification('Quote saved successfully!', 'success');
+        // Show appropriate message
+        showNotification(
+            result.isUpdate 
+                ? 'Quote updated successfully!' 
+                : 'Quote saved successfully!',
+            'success'
+        );
+        
         updateLastSavedState();
 
         // Only close the modal if we're saving a new quote
@@ -1090,7 +1097,6 @@ async function confirmSaveQuote(existingProjectName = null) {
         setLoadingState(false);
     }
 }
-
 
 // Add this new saveQuote function
 window.saveQuote = function() {
