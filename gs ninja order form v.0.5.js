@@ -970,61 +970,6 @@ function saveCurrentRoomData(roomId = currentRoomId) {
     return roomData; // Return the data in case we need it
 }
 
-function loadRoomData(roomId) {
-    console.log('Loading room data for:', roomId);
-
-    // Reset form fields
-    setWallMeasurements('base', []);
-    setWallMeasurements('upper', []);
-
-    // Load the saved data
-    const savedData = localStorage.getItem(roomId);
-    console.log('Loaded room data from storage:', savedData);
-
-    if (savedData) {
-        const roomData = JSON.parse(savedData);
-        console.log('Parsed room data:', roomData);
-        
-        // Set dimensions
-        if (roomData.dimensions) {
-            console.log('Setting dimensions:', roomData.dimensions);
-            
-            // Set base walls
-            if (roomData.dimensions.base) {
-                document.getElementById('base-wall-a').value = roomData.dimensions.base.wallA || '';
-                document.getElementById('base-wall-b').value = roomData.dimensions.base.wallB || '';
-                document.getElementById('base-wall-c').value = roomData.dimensions.base.wallC || '';
-                document.getElementById('base-wall-d').value = roomData.dimensions.base.wallD || '';
-            }
-            
-            // Set upper walls
-            if (roomData.dimensions.upper) {
-                document.getElementById('upper-wall-a').value = roomData.dimensions.upper.wallA || '';
-                document.getElementById('upper-wall-b').value = roomData.dimensions.upper.wallB || '';
-                document.getElementById('upper-wall-c').value = roomData.dimensions.upper.wallC || '';
-                document.getElementById('upper-wall-d').value = roomData.dimensions.upper.wallD || '';
-            }
-        }
-
-        // Set options
-        if (roomData.options) {
-            console.log('Setting options:', roomData.options);
-            setSelectedOptions(roomData.options);
-        }
-    } else {
-        console.log('No saved data found for room:', roomId);
-        setSelectedOptions({});
-    }
-
-    // Update room name
-    const roomIndex = parseInt(roomId.replace('room-', '')) - 1;
-    document.getElementById('room-name').value = rooms[roomIndex];
-
-    // Update calculations
-    updateLinearFootage();
-    updateCostBreakdown();
-}
-
 function setWallDimensions(section, dimensions) {
     Object.entries(dimensions).forEach(([wall, value]) => {
         const input = document.getElementById(`${section}-wall-${wall.toLowerCase()}`);
@@ -1716,11 +1661,38 @@ async function loadSavedQuote(quote) {
     rooms = quote.rooms.map(room => room.name);
     localStorage.setItem('rooms', JSON.stringify(rooms));
 
-    // 2. Save room data to localStorage - FIXED THIS PART
+    // 2. Save room data to localStorage
     quote.rooms.forEach((room, index) => {
-        const roomId = `room-${index + 1}`; // Use index + 1 for room IDs
-        console.log('Saving room data:', roomId, room);
-        localStorage.setItem(roomId, JSON.stringify(room.data));
+        const roomId = `room-${index + 1}`;
+        console.log('Processing room:', room);
+        
+        // Make sure we have valid room data
+        const roomData = {
+            dimensions: {
+                base: {
+                    wallA: '', wallB: '', wallC: '', wallD: ''
+                },
+                upper: {
+                    wallA: '', wallB: '', wallC: '', wallD: ''
+                }
+            },
+            options: {
+                boxConstruction: '',
+                boxMaterial: '',
+                doorMaterial: '',
+                doorStyle: '',
+                finish: '',
+                interiorFinish: '',
+                drawerBox: '',
+                drawerStyle: '',
+                hardware: '',
+                edgeband: ''
+            },
+            ...room.data // Spread the saved data over our default structure
+        };
+
+        console.log(`Saving room data for ${roomId}:`, roomData);
+        localStorage.setItem(roomId, JSON.stringify(roomData));
     });
 
     // Update the title header with the project name
@@ -1741,12 +1713,83 @@ async function loadSavedQuote(quote) {
 
     // 5. Initialize room selector and load first room
     initializeRoomSelector();
-    
-    // 6. Load the room data
     loadRoomData(currentRoomId);
 
-    // 7. Show the quote form *without* clearing data
+    // 6. Show the quote form *without* clearing data
     showCreateQuote(false);
+}
+
+function loadRoomData(roomId) {
+    console.log('Loading room data for:', roomId);
+
+    // Reset form fields
+    setWallMeasurements('base', []);
+    setWallMeasurements('upper', []);
+
+    // Load the saved data
+    const savedData = localStorage.getItem(roomId);
+    console.log('Loaded room data from storage:', savedData);
+
+    if (savedData) {
+        try {
+            const roomData = JSON.parse(savedData);
+            console.log('Parsed room data:', roomData);
+
+            // Set dimensions with default empty values
+            const dimensions = roomData.dimensions || {
+                base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+                upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
+            };
+
+            // Set base walls
+            if (dimensions.base) {
+                document.getElementById('base-wall-a').value = dimensions.base.wallA || '';
+                document.getElementById('base-wall-b').value = dimensions.base.wallB || '';
+                document.getElementById('base-wall-c').value = dimensions.base.wallC || '';
+                document.getElementById('base-wall-d').value = dimensions.base.wallD || '';
+            }
+            
+            // Set upper walls
+            if (dimensions.upper) {
+                document.getElementById('upper-wall-a').value = dimensions.upper.wallA || '';
+                document.getElementById('upper-wall-b').value = dimensions.upper.wallB || '';
+                document.getElementById('upper-wall-c').value = dimensions.upper.wallC || '';
+                document.getElementById('upper-wall-d').value = dimensions.upper.wallD || '';
+            }
+
+            // Set options with default empty values
+            const options = roomData.options || {
+                boxConstruction: '',
+                boxMaterial: '',
+                doorMaterial: '',
+                doorStyle: '',
+                finish: '',
+                interiorFinish: '',
+                drawerBox: '',
+                drawerStyle: '',
+                hardware: '',
+                edgeband: ''
+            };
+
+            console.log('Setting options:', options);
+            setSelectedOptions(options);
+
+        } catch (error) {
+            console.error('Error parsing room data:', error);
+            setSelectedOptions({}); // Reset options on error
+        }
+    } else {
+        console.log('No saved data found for room:', roomId);
+        setSelectedOptions({}); // Reset options for new room
+    }
+
+    // Update room name
+    const roomIndex = parseInt(roomId.replace('room-', '')) - 1;
+    document.getElementById('room-name').value = rooms[roomIndex];
+
+    // Update calculations
+    updateLinearFootage();
+    updateCostBreakdown();
 }
 
 function calculateTax() {
@@ -1775,4 +1818,34 @@ function setLoadingState(isLoading) {
     if (modal) {
         modal.style.cursor = isLoading ? 'wait' : 'default';
     }
+}
+
+function setSelectedOptions(options = {}) {
+    console.log('Setting options:', options);
+
+    // Get all select elements in the options form
+    const selects = document.querySelectorAll('.options-form select');
+
+    // Reset all selects first
+    selects.forEach(select => {
+        select.value = select.options[0].value; // Set to first option (usually empty or default)
+    });
+
+    // Reset all text inputs
+    const inputs = document.querySelectorAll('.options-form input[type="text"]');
+    inputs.forEach(input => {
+        input.value = '';
+    });
+
+    // Set the values for each option
+    Object.entries(options).forEach(([key, value]) => {
+        if (value) { // Only set if we have a value
+            const elementId = optionMapping[key] || key;
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.value = value;
+                console.log(`Set ${elementId} to ${value}`);
+            }
+        }
+    });
 }
