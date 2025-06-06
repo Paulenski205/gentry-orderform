@@ -263,7 +263,7 @@ function addWall(section) {
                    id="${section}-wall-${wallLetter.toLowerCase()}" 
                    name="${section}-wall-${wallLetter.toLowerCase()}" 
                    step="0.01" 
-                   required
+                   
                    onchange="updateLinearFootage()">
             ${wallCount < 3 ? `<button type="button" class="add-wall-button small" onclick="addWall('${section}')">+</button>` : ''}
         `;
