@@ -625,8 +625,28 @@ try {
         totalInstallationCost += installationSurcharge;
     }
 
+// Calculate add-ons cost
 const addonsCost = calculateAddonsCost();
-// Add addons line
+
+// Calculate project totals
+const discountedSubtotal = projectSubtotal - discount;
+const tax = discountedSubtotal * taxRate;
+const total = discountedSubtotal + tax + totalInstallationCost + addonsCost;
+
+// Create summary section FIRST
+const summarySection = document.createElement('div');
+summarySection.className = 'project-summary';
+
+// Project subtotal
+const subtotalElement = document.createElement('div');
+subtotalElement.className = 'cost-line subtotal';
+subtotalElement.innerHTML = `
+    <span>Project Sub-Total</span>
+    <span class="amount">${formatMoney(projectSubtotal)}</span>
+`;
+summarySection.appendChild(subtotalElement);
+
+// Add-ons line
 const addonsLine = document.createElement('div');
 addonsLine.className = 'cost-line';
 addonsLine.innerHTML = `
@@ -634,24 +654,6 @@ addonsLine.innerHTML = `
     <span class="amount">${formatMoney(addonsCost)}</span>
 `;
 summarySection.appendChild(addonsLine);
-
-    // Calculate project totals
-    const discountedSubtotal = projectSubtotal - discount;
-    const tax = discountedSubtotal * taxRate;
-    const total = discountedSubtotal + tax + totalInstallationCost + addonsCost;
-
-    // Add project summary section
-    const summarySection = document.createElement('div');
-    summarySection.className = 'project-summary';
-
-    // Project subtotal
-    const subtotalElement = document.createElement('div');
-    subtotalElement.className = 'cost-line subtotal';
-    subtotalElement.innerHTML = `
-        <span>Project Sub-Total</span>
-        <span class="amount">${formatMoney(projectSubtotal)}</span>
-    `;
-    summarySection.appendChild(subtotalElement);
 
     // Discount if applicable
     if (discount > 0) {
@@ -697,13 +699,14 @@ summarySection.appendChild(addonsLine);
     `;
     summarySection.appendChild(totalLine);
 
+    // Add summary section to cost breakdown
     costBreakdownList.appendChild(summarySection);
+
 } catch (error) {
         console.error('Error updating cost breakdown:', error);
         showNotification('Error calculating costs', 'error');
     }
 }
-
 
 // Installation cost calculation
 function calculateInstallationCost(boxConstruction, totalLinearFoot) {
