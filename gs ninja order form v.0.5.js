@@ -625,10 +625,20 @@ try {
         totalInstallationCost += installationSurcharge;
     }
 
+const addonsCost = calculateAddonsCost();
+// Add addons line
+const addonsLine = document.createElement('div');
+addonsLine.className = 'cost-line';
+addonsLine.innerHTML = `
+    <span>Add-ons</span>
+    <span class="amount">${formatMoney(addonsCost)}</span>
+`;
+summarySection.appendChild(addonsLine);
+
     // Calculate project totals
     const discountedSubtotal = projectSubtotal - discount;
     const tax = discountedSubtotal * taxRate;
-    const total = discountedSubtotal + tax + totalInstallationCost;
+    const total = discountedSubtotal + tax + totalInstallationCost + addonsCost;
 
     // Add project summary section
     const summarySection = document.createElement('div');
@@ -1347,6 +1357,7 @@ window.saveQuote = function() {
     // Initialize the UI
     initializeRoomSelector();
     initializeEventListeners();
+initializeAddons();
 
     // Add event listeners
     const clearDataButton = document.getElementById('clear-data-button');
@@ -1383,9 +1394,14 @@ function closeModal() {
         modal.style.display = "none";
     }
 }
+
 function exportToPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    
+    // Get existing quote ID and project name
+    const quoteId = document.getElementById('quote-id').value || 'NEW_QUOTE';
+    const projectName = document.getElementById('project-name').value || 'Untitled';
     
     // Add company logo
     const logoUrl = 'https://static.wixstatic.com/media/daaed2_67c14634bac74c9c937f25b28559d874~mv2.png/v1/crop/x_8,y_0,w_1800,h_1996/fill/w_109,h_122,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Gentry-Stinson-Logo.png';
@@ -1401,11 +1417,12 @@ function exportToPDF() {
     doc.setFontSize(16);
     doc.text('Cabinet Quote', 15, 60);
     doc.setFontSize(12);
-    doc.text(`Quote ID: ${generateQuoteId()}`, 15, 70);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, 80);
+    doc.text(`Quote ID: ${quoteId}`, 15, 70);
+    doc.text(`Project: ${projectName}`, 15, 80);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, 90);
 
     // Add room details
-    let yPosition = 100;
+    let yPosition = 110; // Adjusted starting position
     rooms.forEach((roomName, index) => {
         const roomId = `room-${index + 1}`;
         const roomData = JSON.parse(localStorage.getItem(roomId)) || {};
@@ -1512,8 +1529,9 @@ function exportToPDF() {
         doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
     }
     
-    // Save the PDF
-    doc.save(`GS_Cabinet_Quote_${generateQuoteId()}.pdf`);
+    // Save the PDF with both quote ID and project name
+    const sanitizedProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`GS_Cabinet_Quote_${quoteId}_${sanitizedProjectName}.pdf`);
 }
 
 // Helper function to calculate project subtotal
@@ -1797,4 +1815,159 @@ function setSelectedOptions(options = {}) {
             }
         });
     }
+}
+
+const ADDONS = {
+    baseInteriorLighting: {
+        name: "Base Interior Cabinet Lighting",
+        price: 9.375,
+        type: "linear",
+        unit: "per linear ft."
+    },
+    toeKickLighting: {
+        name: "Toe-Kick Lighting",
+        price: 9.375,
+        type: "linear",
+        unit: "per linear ft."
+    },
+    drawerCharging: {
+        name: "Drawer Hidden Charging Station",
+        price: 635.00,
+        type: "quantity",
+        unit: "each"
+    },
+    trashPulloutSoft: {
+        name: "Base Trash Pullout w/ Soft Close",
+        price: 550.00,
+        type: "quantity",
+        unit: "each"
+    },
+    trashPulloutBasic: {
+        name: "Basic Trash Pullout",
+        price: 300.00,
+        type: "quantity",
+        unit: "each"
+    },
+    underCabinetLighting: {
+        name: "Under-Cabinet Lighting",
+        price: 9.375,
+        type: "linear",
+        unit: "per linear ft."
+    },
+    upperInteriorLighting: {
+        name: "Upper Interior Cabinet Lighting",
+        price: 9.375,
+        type: "linear",
+        unit: "per linear ft."
+    },
+    floatingShelves: {
+        name: "Floating Shelves",
+        price: 50.00,
+        type: "linear",
+        unit: "per linear foot"
+    },
+    floatingShelvesLED: {
+        name: "Floating Shelves + LED Lighting",
+        price: 60.00,
+        type: "linear",
+        unit: "per linear foot"
+    },
+    upperPulloutRack: {
+        name: "Upper 4-Shelf Pullout Rack w/ Soft Close",
+        price: 300.00,
+        type: "quantity",
+        unit: "each"
+    }
+};
+
+// Initialize add-ons select
+function initializeAddons() {
+    console.log('Initializing add-ons...');
+    const select = document.getElementById('addon-select');
+    console.log('Add-on select element:', select);
+    
+    if (!select) {
+        console.error('Add-on select element not found!');
+        return;
+    }
+
+    Object.entries(ADDONS).forEach(([key, addon]) => {
+        console.log('Adding addon:', key, addon);
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = `${addon.name} - ${formatMoney(addon.price)} ${addon.unit}`;
+        select.appendChild(option);
+    });
+    
+    console.log('Add-ons initialized');
+}
+
+// Add selected add-on
+function addSelectedAddon() {
+    const select = document.getElementById('addon-select');
+    const addonKey = select.value;
+    
+    if (!addonKey) return;
+    
+    const addon = ADDONS[addonKey];
+    const activeAddons = document.getElementById('active-addons');
+    
+    // Create addon item
+    const addonItem = document.createElement('div');
+    addonItem.className = 'addon-item';
+    addonItem.dataset.addonKey = addonKey;
+    
+    const inputType = addon.type === 'linear' ? 'number' : 'number';
+    const inputStep = addon.type === 'linear' ? '0.01' : '1';
+    const inputMin = addon.type === 'linear' ? '0' : '1';
+    const defaultValue = addon.type === 'linear' ? '' : '1';
+    
+    addonItem.innerHTML = `
+        <span>${addon.name}</span>
+        <input type="${inputType}" 
+               step="${inputStep}" 
+               min="${inputMin}" 
+               value="${defaultValue}" 
+               class="addon-value" 
+               onchange="updateAddonTotal(this)"
+               ${addon.type === 'quantity' ? 'pattern="[0-9]*"' : ''}
+               maxlength="3">
+        <span>${addon.unit}</span>
+        <span class="addon-total">${formatMoney(0)}</span>
+        <button class="remove-addon" onclick="removeAddon(this)">×</button>
+    `;
+    
+    activeAddons.appendChild(addonItem);
+    select.value = ''; // Reset select
+    updateAddonTotal(addonItem.querySelector('.addon-value'));
+    updateCostBreakdown();
+}
+// Update addon total
+function updateAddonTotal(input) {
+    const addonItem = input.closest('.addon-item');
+    const addonKey = addonItem.dataset.addonKey;
+    const addon = ADDONS[addonKey];
+    
+    const value = parseFloat(input.value) || 0;
+    const total = addon.price * value;
+    
+    addonItem.querySelector('.addon-total').textContent = formatMoney(total);
+    updateCostBreakdown();
+}
+// Remove addon
+function removeAddon(button) {
+    const addonItem = button.closest('.addon-item');
+    addonItem.remove();
+    updateCostBreakdown();
+}
+
+// Calculate total addons cost
+function calculateAddonsCost() {
+    let total = 0;
+    document.querySelectorAll('.addon-item').forEach(item => {
+        const value = parseFloat(item.querySelector('.addon-value').value) || 0;
+        const addon = ADDONS[item.dataset.addonKey];
+        total += addon.price * value;
+    });
+    return total;
 }
