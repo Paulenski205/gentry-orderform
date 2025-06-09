@@ -1,3 +1,11 @@
+ <!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Paulenski205/gentry-orderform@f39575ea7a2799540e58d694a5e4955b25671c26/gs%20ninja%20order%20form%20v.0.5.css">
+    <title>Cabinetry Order Form</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
     <!-- Welcome page -->
     <div class="welcome-container" id="welcome-container">
         <img style="max-height:500px;" src="https://static.wixstatic.com/media/daaed2_ddd95b246f944d598ee05d08035961c2~mv2.png/v1/fill/w_1323,h_910,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/daaed2_ddd95b246f944d598ee05d08035961c2~mv2.png" 
@@ -259,11 +267,19 @@
 </div>
 
                         <!-- Add-on section -->
-                        <div class="addon-section">
-                            <h3>Add-ons</h3>
-                            <button type="button" onclick="addAddOn()">Add Add-on</button>
-                            <div id="add-on-list"></div>
-                        </div>
+<div class="addon-section">
+    <h3>Add-ons</h3>
+    <div class="addon-selector">
+        <select id="addon-select">
+            <option value="">Select an add-on...</option>
+        </select>
+        <button type="button" onclick="addSelectedAddon()">Add</button>
+    </div>
+    <div id="active-addons" class="active-addons">
+        <!-- Active add-ons will be added here -->
+    </div>
+</div>
+
 
                         <!-- Action Buttons -->
                         <div class="action-buttons">
@@ -329,5 +345,8 @@
         </div>
     </div>
 </div>
+ <script src="https://cdn.jsdelivr.net/gh/Paulenski205/gentry-orderform@f39575ea7a2799540e58d694a5e4955b25671c26/gs%20ninja%20order%20form%20v.0.5.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script> </body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</body>
+</html>
