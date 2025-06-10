@@ -613,6 +613,10 @@ try {
         });
     });
 
+// Calculate add-ons cost and add to subtotal
+    const addonsCost = calculateAddonsCost();
+    projectSubtotal += addonsCost; // Add add-ons to subtotal
+
     // Get project-wide options
     const taxType = document.getElementById('tax-type').value;
     const taxRate = taxType === 'AZ' ? 0.086 : 0;
@@ -625,13 +629,10 @@ try {
         totalInstallationCost += installationSurcharge;
     }
 
-// Calculate add-ons cost
-const addonsCost = calculateAddonsCost();
-
 // Calculate project totals
 const discountedSubtotal = projectSubtotal - discount;
 const tax = discountedSubtotal * taxRate;
-const total = discountedSubtotal + tax + totalInstallationCost + addonsCost;
+const total = discountedSubtotal + tax + totalInstallationCost;
 
 // Create summary section FIRST
 const summarySection = document.createElement('div');
@@ -645,15 +646,6 @@ subtotalElement.innerHTML = `
     <span class="amount">${formatMoney(projectSubtotal)}</span>
 `;
 summarySection.appendChild(subtotalElement);
-
-// Add-ons line
-const addonsLine = document.createElement('div');
-addonsLine.className = 'cost-line';
-addonsLine.innerHTML = `
-    <span>Add-ons</span>
-    <span class="amount">${formatMoney(addonsCost)}</span>
-`;
-summarySection.appendChild(addonsLine);
 
     // Discount if applicable
     if (discount > 0) {
@@ -1736,15 +1728,17 @@ function loadRoomData(roomId) {
 function calculateTax() {
     const taxType = document.getElementById('tax-type').value;
     const projectSubtotal = calculateProjectSubtotal();
-    return taxType === 'AZ' ? projectSubtotal * 0.086 : 0;
+    const addonsCost = calculateAddonsCost();
+    return taxType === 'AZ' ? (projectSubtotal + addonsCost) * 0.086 : 0;
 }
 
 function calculateFinalTotal() {
     const projectSubtotal = calculateProjectSubtotal();
+    const addonsCost = calculateAddonsCost();
     const tax = calculateTax();
     const installationCost = calculateTotalInstallationCost();
     const discount = parseFloat(document.getElementById('discount').value) || 0;
-    return projectSubtotal + tax + installationCost - discount;
+    return projectSubtotal + addonsCost + tax + installationCost - discount;
 }
 
 function setLoadingState(isLoading) {
@@ -1898,7 +1892,7 @@ function initializeAddons() {
         console.log('Adding addon:', key, addon);
         const option = document.createElement('option');
         option.value = key;
-        option.textContent = `${addon.name} - ${formatMoney(addon.price)} ${addon.unit}`;
+        option.textContent = addon.name; // Just show the name, not the price
         select.appendChild(option);
     });
     
@@ -1945,6 +1939,7 @@ function addSelectedAddon() {
     updateAddonTotal(addonItem.querySelector('.addon-value'));
     updateCostBreakdown();
 }
+
 // Update addon total
 function updateAddonTotal(input) {
     const addonItem = input.closest('.addon-item');
