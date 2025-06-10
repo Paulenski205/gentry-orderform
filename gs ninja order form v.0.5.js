@@ -604,7 +604,29 @@ try {
         }
     }
 
-    costBreakdownList.appendChild(roomSection);
+        // Add-ons for this room
+        const roomAddonsCost = calculateRoomAddonsCost(roomId); // New function
+        roomSubtotal += roomAddonsCost; // Add to room subtotal
+
+        // Add each add-on as a line item under the room
+        const roomAddonsDiv = document.createElement('div');
+        roomAddonsDiv.className = 'addons-list';
+
+        getRoomAddons(roomId).forEach(addonData => { // New function
+            const addonItem = document.createElement('div');
+            addonItem.className = 'cost-line selection-detail';
+            addonItem.innerHTML = `
+                <span>- ${addonData.name}:</span>
+                <span>${addonData.value} ${addonData.unit}</span>
+            `;
+            roomAddonsDiv.appendChild(addonItem);
+        });
+
+        if (roomAddonsDiv.children.length > 0) {
+            roomSection.appendChild(roomAddonsDiv);
+        }
+
+        costBreakdownList.appendChild(roomSection);
         
         // Store room cost for total calculation
         allRoomsCosts.push({
@@ -964,7 +986,13 @@ function saveCurrentRoomData(roomId = currentRoomId) {
                 wallD: document.getElementById('upper-wall-d').value || ''
             }
         },
-        options: getSelectedOptions()
+        options: getSelectedOptions(),
+        addons: getRoomAddons(roomId).map(addon => ({
+            key: Object.keys(ADDONS).find(key => ADDONS[key] === addon),
+            value: addon.value,
+            linearFeet: addon.type === 'linear' ? addon.value : undefined // Store linear feet if applicable
+        }))
+    
     };
 
     console.log('Room data to save:', roomData);
@@ -1193,6 +1221,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('welcome-container').style.display = 'block';
     document.getElementById('main-menu-container').style.display = 'none';
     document.getElementById('create-quote-container').style.display = 'none';
+
+ // Add event listener to update cost breakdown when add-on value changes
+    document.getElementById('active-addons').addEventListener('change', '.addon-value', function() {
+        updateCostBreakdown();
+    });
 
     // Add the new styles
     const newStyles = `
@@ -1470,6 +1503,21 @@ function exportToPDF() {
         
         yPosition += 10;
         
+// Add-ons for this room
+    const roomAddons = getRoomAddons(roomId);
+    if (roomAddons.length > 0) {
+        yPosition += 5;
+        doc.text('Add-ons:', 20, yPosition);
+        yPosition += 10;
+        roomAddons.forEach(addon => {
+            doc.text(`- ${addon.name}: ${addon.value} ${addon.unit}`, 25, yPosition);
+            yPosition += 7;
+        });
+    }
+
+    yPosition += 10;
+
+
         // Add new page if needed
         if (yPosition > 270) {
             doc.addPage();
@@ -1605,6 +1653,15 @@ async function loadSavedQuote(quote) {
     // 2. Save room data to localStorage
     quote.rooms.forEach((room, index) => {
         const roomId = `room-${index + 1}`;
+        if (room.data && room.data.addons) { // Check if addons exist
+            room.data.addons.forEach(addonData => {
+                const addon = ADDONS[addonData.key]; // Find addon by key
+                if (addon) {
+                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet); // New function
+                }
+            });
+        }
+    });
         console.log('Processing room:', room);
         
         // Make sure we have valid room data
@@ -1918,6 +1975,15 @@ function addSelectedAddon() {
     const inputStep = addon.type === 'linear' ? '0.01' : '1';
     const inputMin = addon.type === 'linear' ? '0' : '1';
     const defaultValue = addon.type === 'linear' ? '' : '1';
+
+// Associate add-on with the current room
+    addonItem.dataset.roomId = currentRoomId; // Add roomId data attribute
+
+    // Add data attributes for saving (IMPORTANT - these were missing)
+    addonItem.dataset.addonName = addon.name;
+    addonItem.dataset.addonPrice = addon.price;
+    addonItem.dataset.addonType = addon.type;
+    addonItem.dataset.addonUnit = addon.unit;
     
     addonItem.innerHTML = `
         <span>${addon.name}</span>
@@ -1968,4 +2034,63 @@ function calculateAddonsCost() {
         total += addon.price * value;
     });
     return total;
+}
+
+// Helper functions for add-ons
+function getRoomAddons(roomId) {
+    const addons = [];
+    const addonItems = document.querySelectorAll(`.addon-item[data-room-id="${roomId}"]`); // Select add-ons for this room
+    addonItems.forEach(item => {
+        const value = parseFloat(item.querySelector('.addon-value').value) || 0;
+        if (value > 0) {
+            addons.push({
+                name: item.dataset.addonName, // Get name from data attribute
+                value: value,
+                unit: item.dataset.addonUnit, // Get unit from data attribute
+                price: parseFloat(item.dataset.addonPrice) * value // Calculate price
+            });
+        }
+    });
+    return addons;
+}
+
+function calculateRoomAddonsCost(roomId) {
+    return getRoomAddons(roomId).reduce((total, addon) => total + addon.price, 0);
+}
+
+// New function to add an add-on to a specific room
+function addAddonToRoom(roomId, addon, value, linearFeet) {
+    const activeAddons = document.getElementById('active-addons');
+    const addonItem = document.createElement('div');
+    addonItem.className = 'addon-item';
+    addonItem.dataset.roomId = roomId; // Associate with room
+    addonItem.dataset.addonKey = Object.keys(ADDONS).find(key => ADDONS[key] === addon); // Store addon key
+    addonItem.dataset.addonName = addon.name;
+    addonItem.dataset.addonPrice = addon.price;
+    addonItem.dataset.addonType = addon.type;
+    addonItem.dataset.addonUnit = addon.unit;
+
+    const inputType = addon.type === 'linear' ? 'number' : 'number';
+    const inputStep = addon.type === 'linear' ? '0.01' : '1';
+    const inputMin = addon.type === 'linear' ? '0' : '1';
+    const inputValue = addon.type === 'linear' ? linearFeet : value;
+
+    addonItem.innerHTML = `
+        <span>${addon.name}</span>
+        <input type="${inputType}"
+               step="${inputStep}"
+               min="${inputMin}"
+               value="${inputValue}"
+               class="addon-value"
+               onchange="updateAddonTotal(this)"
+               ${addon.type === 'quantity' ? 'pattern="[0-9]*"' : ''}
+               maxlength="3">
+        <span>${addon.unit}</span>
+        <span class="addon-total">${formatMoney(addon.price * inputValue)}</span>
+        <button class="remove-addon" onclick="removeAddon(this)">×</button>
+    `;
+
+    activeAddons.appendChild(addonItem);
+    updateAddonTotal(addonItem.querySelector('.addon-value'));
+    updateCostBreakdown();
 }
