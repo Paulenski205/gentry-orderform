@@ -945,16 +945,15 @@ function saveCurrentRoomData(roomId = currentRoomId) {
             }
         },
         options: getSelectedOptions(),
-        addons: getRoomAddons(roomId).map(addon => ({
-            key: addon.key, // Directly use the addon.key
+        addons: getRoomAddons(roomId).map(addon => ({ // Correct add-ons saving
+            key: addon.key,
             value: addon.value,
             linearFeet: addon.type === 'linear' ? addon.value : undefined
         }))
-    };
+    }; // roomData object is now complete
 
     console.log('Room data to save:', roomData);
 
-    // Save to localStorage
     try {
         localStorage.setItem(roomId, JSON.stringify(roomData));
         console.log('Successfully saved room data');
@@ -962,8 +961,9 @@ function saveCurrentRoomData(roomId = currentRoomId) {
         console.error('Error saving room data:', error);
     }
 
-    return roomData; // Return the data in case we need it
+    return roomData;
 }
+
 
 function setWallDimensions(section, dimensions) {
     Object.entries(dimensions).forEach(([wall, value]) => {
@@ -1138,630 +1138,6 @@ function confirmClearData() {
 // Function to handle cancellation
 function cancelClearData() {
     document.getElementById('clearConfirmationModal').style.display = 'none'; // Close modal
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize rooms array
-    rooms = ['Room 1'];
-
-    // Initialize default room data for the first room
-    const defaultRoomData = {
-        dimensions: {
-            base: { wallA: '', wallB: '', wallC: '', wallD: '' },
-            upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
-        },
-        options: {
-            boxConstruction: '',
-            boxMaterial: '',
-            doorMaterial: '',
-            doorStyle: '',
-            finish: '',
-            interiorFinish: '',
-            drawerBox: '',
-            drawerStyle: '',
-            hardware: '',
-            edgeband: ''
-        },
-        addons: [] // Initialize addons as an empty array
-    };
-    localStorage.setItem('room-1', JSON.stringify(defaultRoomData));
-
-    modal = document.getElementById('roomManageModal');
-    closeBtn = document.querySelector('#roomManageModal .close');
-    currentRoomId = 'room-1';
-
- // Add event listener to update cost breakdown when add-on value changes
-    document.getElementById('active-addons').addEventListener('change', (event) => {
-        if (event.target.classList.contains('addon-value')) {
-            updateCostBreakdown();
-        }
-    });
-
-    // Set initial display states
-    document.getElementById('welcome-container').style.display = 'block';
-    document.getElementById('main-menu-container').style.display = 'none';
-    document.getElementById('create-quote-container').style.display = 'none';
-
-    // Add new styles
-    const newStyles = `
-        .project-name {
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-
-        .quote-date {
-            color: #666;
-        }
-
-        .quote-details {
-            margin: 0.5rem 0;
-            font-size: 0.9em;
-        }
-
-        #project-name {
-            width: 100%;
-            padding: 0.5rem;
-            margin-bottom: 1rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-
-        .quotes-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-    `;
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = newStyles;
-    document.head.appendChild(styleSheet);
-
-    // Create the save quote modal
-    const saveQuoteModal = document.createElement('div');
-    saveQuoteModal.id = 'saveQuoteModal';
-    saveQuoteModal.className = 'modal';
-    saveQuoteModal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Save Quote</h3>
-                <span class="close" onclick="cancelSaveQuote()">×</span>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label for="project-name">Project Name:</label>
-                    <input type="text" id="project-name" required>
-                </div>
-                <div class="confirmation-buttons">
-                    <button class="save-button" onclick="confirmSaveQuote()">Save</button>
-                    <button class="cancel" onclick="cancelSaveQuote()">Cancel</button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(saveQuoteModal);
-
-    // Define modal-related functions on window object
-    window.saveQuote = function() {
-        const existingQuoteId = document.getElementById('quote-id').value;
-        const existingProjectName = document.getElementById('project-name').value;
-
-        if (existingQuoteId && existingProjectName) {
-            if (confirm(`Overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
-                confirmSaveQuote(existingProjectName);
-            }
-        } else {
-            const modal = document.getElementById('saveQuoteModal');
-            if (modal) {
-                modal.style.display = 'block';
-            }
-        }
-    };
-
-    window.cancelSaveQuote = function() {
-        const modal = document.getElementById('saveQuoteModal');
-        if (modal) {
-            modal.style.display = 'none';
-            document.getElementById('project-name').value = '';
-        }
-    };
-
-    window.confirmSaveQuote = async function(existingProjectName = null) {
-    const projectName = existingProjectName || document.getElementById('project-name').value.trim();
-    
-    try {
-        if (!projectName) {
-            showNotification('Please enter a project name', 'error');
-            return;
-        }
-
-        setLoadingState(true);
-
-            // Gather room data
-            const roomsData = rooms.map((room, index) => {
-                const roomId = `room-${index + 1}`;
-                const savedData = localStorage.getItem(roomId);
-                const roomData = savedData ? JSON.parse(savedData) : null;
-                
-                console.log(`Room ${roomId} data:`, roomData);
-                
-                return {
-                    name: room,
-                    data: roomData
-                };
-            });
-
-            const quoteData = {
-                id: document.getElementById('quote-id')?.value || generateQuoteId(),
-                projectName: projectName,
-                timestamp: new Date().toISOString(),
-                rooms: roomsData,
-                projectTotal: calculateProjectSubtotal(),
-                tax: calculateTax(),
-                taxType: document.getElementById('tax-type').value,
-                installationType: document.getElementById('installation-type').value,
-                installationCost: calculateTotalInstallationCost(),
-                installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
-                discount: parseFloat(document.getElementById('discount').value) || 0,
-                finalTotal: calculateFinalTotal()
-            };
-
-            console.log('Sending quote data:', quoteData);
-
-            // Use MessageSystem to send the save request
-            const result = await MessageSystem.sendMessage('saveQuote', quoteData);
-
-            if (!result || !result.success) {
-                throw new Error(result?.error || 'Failed to save quote');
-            }
-
-            // Show appropriate message based on whether it's an update or new quote
-        showNotification(
-            existingProjectName ? 'Quote updated successfully!' : 'Quote saved successfully!',
-            'success'
-        );
-        
-        updateLastSavedState();
-
-        // Only close the modal if we're saving a new quote
-        if (!existingProjectName) {
-            cancelSaveQuote();
-        }
-
-    } catch (error) {
-        console.error('Save error:', error);
-        showNotification('Error saving quote: ' + error.message, 'error');
-    } finally {
-        setLoadingState(false);
-    }
-};
-
-    // Initialize UI and calculations *after* setting up default data
-    initializeRoomSelector();
-    initializeEventListeners();
-    initializeAddons();
-    loadRoomData(currentRoomId); // Load initial room data
-    updateLinearFootage(); // Calculate initial linear footage
-    updateCostBreakdown(); // Calculate initial cost breakdown
-
-    // Add event listeners
-    const clearDataButton = document.getElementById('clear-data-button');
-    if (clearDataButton) {
-        clearDataButton.addEventListener('click', showClearConfirmation);
-    }
-    document.getElementById('back-button')?.addEventListener('click', handleBack);
-    document.getElementById('save-quote')?.addEventListener('click', window.saveQuote);
-    document.getElementById('tax-type').addEventListener('change', updateCostBreakdown);
-    document.getElementById('installation-type').addEventListener('change', updateCostBreakdown);
-    document.getElementById('installation-surcharge').addEventListener('input', updateCostBreakdown);
-    document.getElementById('discount').addEventListener('input', updateCostBreakdown);
-    document.getElementById('active-addons').addEventListener('change', '.addon-value', updateCostBreakdown);
-
-    // Update window click handler for all modals
-    window.onclick = function(event) {
-        const saveModal = document.getElementById('saveQuoteModal');
-        if (event.target === saveModal) {
-            cancelSaveQuote();
-        }
-        if (event.target === modal) {
-            closeModal();
-        }
-        if (event.target === document.getElementById('backConfirmationModal')) {
-            hideBackConfirmation();
-        }
-        if (event.target === document.getElementById('clearConfirmationModal')) {
-            cancelClearData();
-        }
-    };
-});
-
-function closeModal() {
-    if (modal) { // Check if modal exists
-        modal.style.display = "none";
-    }
-}
-
-function exportToPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // Get existing quote ID and project name
-    const quoteId = document.getElementById('quote-id').value || 'NEW_QUOTE';
-    const projectName = document.getElementById('project-name').value || 'Untitled';
-    
-    // Add company logo
-    const logoUrl = 'https://static.wixstatic.com/media/daaed2_67c14634bac74c9c937f25b28559d874~mv2.png/v1/crop/x_8,y_0,w_1800,h_1996/fill/w_109,h_122,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Gentry-Stinson-Logo.png';
-    
-    // Create header section
-    doc.addImage(logoUrl, 'PNG', 15, 15, 30, 30);
-    doc.setFontSize(20);
-    doc.text('Gentry Stinson', 50, 25);
-    doc.setFontSize(12);
-    doc.text('Phoenix, Arizona', 50, 35);
-    
-    // Add quote information
-    doc.setFontSize(16);
-    doc.text('Cabinet Quote', 15, 60);
-    doc.setFontSize(12);
-    doc.text(`Quote ID: ${quoteId}`, 15, 70);
-    doc.text(`Project: ${projectName}`, 15, 80);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, 90);
-
-    // Add room details
-    let yPosition = 110; // Adjusted starting position
-    rooms.forEach((roomName, index) => {
-        const roomId = `room-${index + 1}`;
-        const roomData = JSON.parse(localStorage.getItem(roomId)) || {};
-        
-        // Room header
-        doc.setFontSize(14);
-        doc.text(roomName, 15, yPosition);
-        yPosition += 10;
-        
-        // Dimensions
-        if (roomData.dimensions) {
-            doc.setFontSize(12);
-            doc.text('Dimensions:', 20, yPosition);
-            yPosition += 10;
-            
-            // Base walls
-            if (roomData.dimensions.base) {
-                Object.entries(roomData.dimensions.base).forEach(([wall, value]) => {
-                    if (value) {
-                        doc.text(`Base ${wall}: ${value}"`, 25, yPosition);
-                        yPosition += 7;
-                    }
-                });
-            }
-            
-            // Upper walls
-            if (roomData.dimensions.upper) {
-                Object.entries(roomData.dimensions.upper).forEach(([wall, value]) => {
-                    if (value) {
-                        doc.text(`Upper ${wall}: ${value}"`, 25, yPosition);
-                        yPosition += 7;
-                    }
-                });
-            }
-        }
-        
-        // Options
-        if (roomData.options) {
-            yPosition += 5;
-            doc.text('Options:', 20, yPosition);
-            yPosition += 10;
-            
-            Object.entries(roomData.options).forEach(([key, value]) => {
-                if (value && value !== '-') {
-                    doc.text(`${key}: ${value}`, 25, yPosition);
-                    yPosition += 7;
-                }
-            });
-        }
-        
-        yPosition += 10;
-        
-// Add-ons for this room
-    const roomAddons = getRoomAddons(roomId);
-    if (roomAddons.length > 0) {
-        yPosition += 5;
-        doc.text('Add-ons:', 20, yPosition);
-        yPosition += 10;
-        roomAddons.forEach(addon => {
-            doc.text(`- ${addon.name}: ${addon.value} ${addon.unit}`, 25, yPosition);
-            yPosition += 7;
-        });
-    }
-
-    yPosition += 10;
-
-
-        // Add new page if needed
-        if (yPosition > 270) {
-            doc.addPage();
-            yPosition = 20;
-        }
-    });
-    
-    // Add cost breakdown
-    doc.addPage();
-    doc.setFontSize(16);
-    doc.text('Cost Breakdown', 15, 20);
-    
-    let costYPosition = 40;
-    
-    // Project subtotal
-    const projectSubtotal = calculateProjectSubtotal();
-    doc.setFontSize(12);
-    doc.text(`Project Sub-Total: ${formatMoney(projectSubtotal)}`, 15, costYPosition);
-    costYPosition += 10;
-    
-    // Tax
-    const taxType = document.getElementById('tax-type').value;
-    const taxRate = taxType === 'AZ' ? 0.086 : 0;
-    const tax = projectSubtotal * taxRate;
-    doc.text(`Tax (${taxRate * 100}%): ${formatMoney(tax)}`, 15, costYPosition);
-    costYPosition += 10;
-    
-    // Installation
-    const installationType = document.getElementById('installation-type').value;
-    const installationSurcharge = parseFloat(document.getElementById('installation-surcharge').value) || 0;
-    const installationCost = calculateTotalInstallationCost();
-    doc.text(`Installation: ${formatMoney(installationCost)}`, 15, costYPosition);
-    costYPosition += 10;
-    
-    // Discount
-    const discount = parseFloat(document.getElementById('discount').value) || 0;
-    if (discount > 0) {
-        doc.text(`Discount: -${formatMoney(discount)}`, 15, costYPosition);
-        costYPosition += 10;
-    }
-    
-    // Total
-    const total = projectSubtotal + tax + installationCost - discount;
-    doc.setFontSize(14);
-    doc.text(`Total: ${formatMoney(total)}`, 15, costYPosition);
-    
-    // Add footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(10);
-        doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
-    }
-    
-    // Save the PDF with both quote ID and project name
-    const sanitizedProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    doc.save(`GS_Cabinet_Quote_${quoteId}_${sanitizedProjectName}.pdf`);
-}
-
-// Helper function to calculate project subtotal
-function calculateProjectSubtotal() {
-    let total = 0;
-    rooms.forEach((roomName, index) => {
-        const roomId = `room-${index + 1}`;
-        const roomData = JSON.parse(localStorage.getItem(roomId)) || {};
-        const linearFootage = calculateRoomLinearFootage(roomData); // Calculate linear footage
-        const calculator = new CabinetCalculator(linearFootage);
-        total += calculator.calculateTotalCost(roomData?.options || {}); // Use optional chaining
-    });
-    return total;
-}
-
-// Helper function to calculate total installation cost
-function calculateTotalInstallationCost() {
-    let total = 0;
-    const installationType = document.getElementById('installation-type').value;
-    const installationSurcharge = parseFloat(document.getElementById('installation-surcharge').value) || 0;
-    
-    if (installationType === 'professional') {
-        rooms.forEach((roomName, index) => {
-            const roomId = `room-${index + 1}`;
-            const savedData = localStorage.getItem(roomId);
-            const roomData = savedData ? JSON.parse(savedData) : {};
-
-            // Use optional chaining and provide a default empty object
-            const roomOptions = roomData?.options || {};  // Correct usage
-            const linearFoot = calculateRoomLinearFootage(roomData);
-
-            if (roomOptions.boxConstruction) { // Access boxConstruction safely
-                total += calculateInstallationCost(roomOptions.boxConstruction, linearFoot);
-            }
-        });
-        total += installationSurcharge;
-    }
-    
-    return total;
-}
-
-// Frontend JavaScript
-async function loadQuote(quoteId) {
-    try {
-        const quote = await MessageSystem.sendMessage('getQuoteById', { quoteId });
-
-        if (!quote) {
-            throw new Error('Quote not found or invalid response from server');
-        }
-
-        console.log('Loaded quote:', quote);
-
-        // Load the saved quote data into the form
-        loadSavedQuote(quote); // Call the new function
-
-        // Close order history modal
-        const orderHistoryModal = document.getElementById('orderHistoryModal');
-        if (orderHistoryModal) {
-            orderHistoryModal.style.display = 'none';
-            orderHistoryModal.remove();
-        }
-
-    } catch (error) {
-        console.error('Load quote error:', error);
-        showNotification('Error loading quote: ' + error.message, 'error');
-    }
-}
-
-async function loadSavedQuote(quote) {
-    console.log('Loading saved quote:', quote);
-
-    // 1. Update rooms array and localStorage
-    rooms = quote.rooms.map(room => room.name);
-    localStorage.setItem('rooms', JSON.stringify(rooms));
-
-    // 2. Process each room and its data/add-ons
-    quote.rooms.forEach((room, index) => {
-        const roomId = `room-${index + 1}`;
-        console.log('Processing room:', room);
-
-        // Make sure we have valid room data
-        const roomData = {
-            dimensions: {
-                base: { wallA: '', wallB: '', wallC: '', wallD: '' },
-                upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
-            },
-            options: {
-                boxConstruction: '',
-                boxMaterial: '',
-                doorMaterial: '',
-                doorStyle: '',
-                finish: '',
-                interiorFinish: '',
-                drawerBox: '',
-                drawerStyle: '',
-                hardware: '',
-                edgeband: ''
-            },
-            addons: [], // Initialize addons array
-            ...room.data // Spread the saved data
-        };
-
-        // Load add-ons for this room
-        if (room.data && room.data.addons) {
-            room.data.addons.forEach(addonData => {
-                const addon = ADDONS[addonData.key];
-                if (addon) {
-                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet);
-
-                    // Correctly add addonData to roomData.addons
-                    roomData.addons.push(addonData);
-                }
-            });
-        }
-
-        console.log(`Saving room data for ${roomId}:`, roomData);
-        localStorage.setItem(roomId, JSON.stringify(roomData)); // Save roomData *after* processing add-ons
-    });
-
-    // 3. Update current room ID
-    currentRoomId = 'room-1';
-
-    // 4. Update UI *after* saving room data
-    document.getElementById('quote-id').value = quote.id;
-    document.getElementById('tax-type').value = quote.taxType;
-    document.getElementById('installation-type').value = quote.installationType;
-    document.getElementById('installation-surcharge').value = quote.installationSurcharge || '0.00';
-    document.getElementById('discount').value = quote.discount || '0.00';
-    document.getElementById('project-name').value = quote.projectName;
-
-    // 5. Initialize room selector and load first room
-    initializeRoomSelector();
-    loadRoomData(currentRoomId);
-
-    // 6. Show the quote form *without* clearing data
-    showCreateQuote(false);
-}
-
-function loadRoomData(roomId) {
-    console.log('Loading room data for:', roomId);
-
-    // Reset form fields
-    setWallMeasurements('base', []);
-    setWallMeasurements('upper', []);
-
-    // Load the saved data
-    const savedData = localStorage.getItem(roomId);
-    console.log('Loaded room data from storage:', savedData);
-
-    const defaultRoomData = {
-        dimensions: {
-            base: { wallA: '', wallB: '', wallC: '', wallD: '' },
-            upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
-        },
-        options: {
-            boxConstruction: '',
-            boxMaterial: '',
-            doorMaterial: '',
-            doorStyle: '',
-            finish: '',
-            interiorFinish: '',
-            drawerBox: '',
-            drawerStyle: '',
-            hardware: '',
-            edgeband: ''
-        }
-    };
-
-    const roomData = savedData ? JSON.parse(savedData) : defaultRoomData;
-    console.log('Using room data:', roomData);
-
-    // Set dimensions
-    if (roomData.dimensions) {
-        // Set base walls
-        if (roomData.dimensions.base) {
-            document.getElementById('base-wall-a').value = roomData.dimensions.base.wallA || '';
-            document.getElementById('base-wall-b').value = roomData.dimensions.base.wallB || '';
-            document.getElementById('base-wall-c').value = roomData.dimensions.base.wallC || '';
-            document.getElementById('base-wall-d').value = roomData.dimensions.base.wallD || '';
-        }
-        
-        // Set upper walls
-        if (roomData.dimensions.upper) {
-            document.getElementById('upper-wall-a').value = roomData.dimensions.upper.wallA || '';
-            document.getElementById('upper-wall-b').value = roomData.dimensions.upper.wallB || '';
-            document.getElementById('upper-wall-c').value = roomData.dimensions.upper.wallC || '';
-            document.getElementById('upper-wall-d').value = roomData.dimensions.upper.wallD || '';
-        }
-    }
-
-    // Set options
-    setSelectedOptions(roomData.options || {});
-
-    // Update room name
-    const roomIndex = parseInt(roomId.replace('room-', '')) - 1;
-    document.getElementById('room-name').value = rooms[roomIndex];
-
-    // Update calculations
-    updateLinearFootage();
-    updateCostBreakdown();
-}
-
-function calculateTax() {
-    const taxType = document.getElementById('tax-type').value;
-    const projectSubtotal = calculateProjectSubtotal();
-    const addonsCost = calculateAddonsCost();
-    return taxType === 'AZ' ? (projectSubtotal + addonsCost) * 0.086 : 0;
-}
-
-function calculateFinalTotal() {
-    const projectSubtotal = calculateProjectSubtotal();
-    const addonsCost = calculateAddonsCost();
-    const tax = calculateTax();
-    const installationCost = calculateTotalInstallationCost();
-    const discount = parseFloat(document.getElementById('discount').value) || 0;
-    return projectSubtotal + addonsCost + tax + installationCost - discount;
-}
-
-function setLoadingState(isLoading) {
-    const saveButton = document.querySelector('#saveQuoteModal .save-button');
-    if (saveButton) {
-        saveButton.disabled = isLoading;
-        saveButton.textContent = isLoading ? 'Saving...' : 'Save';
-    }
-
-    // Optional: Add visual feedback
-    const modal = document.getElementById('saveQuoteModal');
-    if (modal) {
-        modal.style.cursor = isLoading ? 'wait' : 'default';
-    }
 }
 
 // Define optionMapping at the top level, outside any function
@@ -2049,4 +1425,662 @@ function addAddonToRoom(roomId, addon, value, linearFeet) {
     activeAddons.appendChild(addonItem);
     updateAddonTotal(addonItem.querySelector('.addon-value'));
     updateCostBreakdown();
+}
+
+// Helper function to get all add-ons
+function getAddons() {
+    const addons = [];
+    document.querySelectorAll('.addon-item').forEach(item => {
+        const addonKey = item.dataset.addonKey;
+        const addon = ADDONS[addonKey];
+        const value = parseFloat(item.querySelector('.addon-value').value) || 0;
+        if (value > 0) {
+            addons.push({
+                key: addonKey,
+                name: addon.name,
+                value: value,
+                unit: addon.unit,
+                price: addon.price * value,
+                type: addon.type,
+                roomId: item.dataset.roomId // Include roomId
+            });
+        }
+    });
+    return addons;
+}
+
+async function confirmSaveQuote(existingProjectName = null) {
+    const projectName = existingProjectName || document.getElementById('project-name').value.trim();
+    
+    try {
+        if (!projectName) {
+            showNotification('Please enter a project name', 'error');
+            return;
+        }
+
+        setLoadingState(true);
+
+            // Gather room data
+            const roomsData = rooms.map((room, index) => {
+                const roomId = `room-${index + 1}`;
+                const savedData = localStorage.getItem(roomId);
+                const roomData = savedData ? JSON.parse(savedData) : null;
+                
+                console.log(`Room ${roomId} data:`, roomData);
+                
+                return {
+                    name: room,
+                    data: roomData
+                };
+            });
+
+            const quoteData = {
+                id: document.getElementById('quote-id')?.value || generateQuoteId(),
+                projectName: projectName,
+                timestamp: new Date().toISOString(),
+                rooms: roomsData,
+                projectTotal: calculateProjectSubtotal(),
+                tax: calculateTax(),
+                taxType: document.getElementById('tax-type').value,
+                installationType: document.getElementById('installation-type').value,
+                installationCost: calculateTotalInstallationCost(),
+                installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
+                discount: parseFloat(document.getElementById('discount').value) || 0,
+                finalTotal: calculateFinalTotal(),
+				addons: getAddons()
+            };
+
+            console.log('Sending quote data:', quoteData);
+
+            // Use MessageSystem to send the save request
+            const result = await MessageSystem.sendMessage('saveQuote', quoteData);
+
+            if (!result || !result.success) {
+                throw new Error(result?.error || 'Failed to save quote');
+            }
+
+            // Show appropriate message based on whether it's an update or new quote
+        showNotification(
+            existingProjectName ? 'Quote updated successfully!' : 'Quote saved successfully!',
+            'success'
+        );
+        
+        updateLastSavedState();
+
+        // Only close the modal if we're saving a new quote
+        if (!existingProjectName) {
+            cancelSaveQuote();
+        }
+
+    } catch (error) {
+        console.error('Save error:', error);
+        showNotification('Error saving quote: ' + error.message, 'error');
+    } finally {
+        setLoadingState(false);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize rooms array
+    rooms = ['Room 1'];
+
+    // Initialize default room data for the first room
+    const defaultRoomData = {
+        dimensions: {
+            base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+            upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
+        },
+        options: {
+            boxConstruction: '',
+            boxMaterial: '',
+            doorMaterial: '',
+            doorStyle: '',
+            finish: '',
+            interiorFinish: '',
+            drawerBox: '',
+            drawerStyle: '',
+            hardware: '',
+            edgeband: ''
+        },
+        addons: [] // Initialize addons as an empty array
+    };
+    localStorage.setItem('room-1', JSON.stringify(defaultRoomData));
+
+    modal = document.getElementById('roomManageModal');
+    closeBtn = document.querySelector('#roomManageModal .close');
+    currentRoomId = 'room-1';
+
+ // Add event listener to update cost breakdown when add-on value changes
+    document.getElementById('active-addons').addEventListener('change', function(event) {
+    if (event.target.classList.contains('addon-value')) { // Check if the changed element is an addon-value input
+        updateCostBreakdown();
+    }
+});
+
+    // Set initial display states
+    document.getElementById('welcome-container').style.display = 'block';
+    document.getElementById('main-menu-container').style.display = 'none';
+    document.getElementById('create-quote-container').style.display = 'none';
+
+    // Add new styles
+    const newStyles = `
+        .project-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .quote-date {
+            color: #666;
+        }
+
+        .quote-details {
+            margin: 0.5rem 0;
+            font-size: 0.9em;
+        }
+
+        #project-name {
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .quotes-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    `;
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = newStyles;
+    document.head.appendChild(styleSheet);
+
+    // Create the save quote modal
+    const saveQuoteModal = document.createElement('div');
+    saveQuoteModal.id = 'saveQuoteModal';
+    saveQuoteModal.className = 'modal';
+    saveQuoteModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Save Quote</h3>
+                <span class="close" onclick="cancelSaveQuote()">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="project-name">Project Name:</label>
+                    <input type="text" id="project-name" required>
+                </div>
+                <div class="confirmation-buttons">
+                    <button class="save-button" onclick="confirmSaveQuote()">Save</button>
+                    <button class="cancel" onclick="cancelSaveQuote()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(saveQuoteModal);
+
+    // Define modal-related functions on window object
+    window.saveQuote = function() {
+        const existingQuoteId = document.getElementById('quote-id').value;
+        const existingProjectName = document.getElementById('project-name').value;
+
+        if (existingQuoteId && existingProjectName) {
+            if (confirm(`Overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
+                confirmSaveQuote(existingProjectName);
+            }
+        } else {
+            const modal = document.getElementById('saveQuoteModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        }
+    };
+
+    window.cancelSaveQuote = function() {
+        const modal = document.getElementById('saveQuoteModal');
+        if (modal) {
+            modal.style.display = 'none';
+            document.getElementById('project-name').value = '';
+        }
+    };
+
+    // Define modal-related functions on window object
+    window.saveQuote = function() { /* ... */ };
+    window.cancelSaveQuote = function() { /* ... */ };
+
+    // Initialize UI and calculations *after* setting up default data
+    initializeRoomSelector();
+    initializeEventListeners();
+    initializeAddons();
+    loadRoomData(currentRoomId); // Load initial room data
+    updateLinearFootage(); // Calculate initial linear footage
+    updateCostBreakdown(); // Calculate initial cost breakdown
+
+    // Add event listeners *after* elements exist in the DOM
+    const activeAddonsContainer = document.getElementById('active-addons');
+    if (activeAddonsContainer) {
+        activeAddonsContainer.addEventListener('change', function(event) {
+            if (event.target.classList.contains('addon-value')) {
+                updateCostBreakdown();
+            }
+        });
+    } else {
+        console.error("Could not find 'active-addons' element");
+    }
+
+    const clearDataButton = document.getElementById('clear-data-button');
+    if (clearDataButton) {
+        clearDataButton.addEventListener('click', showClearConfirmation);
+    }
+    document.getElementById('back-button')?.addEventListener('click', handleBack);
+    document.getElementById('save-quote')?.addEventListener('click', window.saveQuote);
+    document.getElementById('tax-type').addEventListener('change', updateCostBreakdown);
+    document.getElementById('installation-type').addEventListener('change', updateCostBreakdown);
+    document.getElementById('installation-surcharge').addEventListener('input', updateCostBreakdown);
+    document.getElementById('discount').addEventListener('input', updateCostBreakdown);
+    document.getElementById('active-addons').addEventListener('change', '.addon-value', updateCostBreakdown);
+
+    // Update window click handler for all modals
+    window.onclick = function(event) {
+        const saveModal = document.getElementById('saveQuoteModal');
+        if (event.target === saveModal) {
+            cancelSaveQuote();
+        }
+        if (event.target === modal) {
+            closeModal();
+        }
+        if (event.target === document.getElementById('backConfirmationModal')) {
+            hideBackConfirmation();
+        }
+        if (event.target === document.getElementById('clearConfirmationModal')) {
+            cancelClearData();
+        }
+    };
+});
+
+function closeModal() {
+    if (modal) { // Check if modal exists
+        modal.style.display = "none";
+    }
+}
+
+function exportToPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Get existing quote ID and project name
+    const quoteId = document.getElementById('quote-id').value || 'NEW_QUOTE';
+    const projectName = document.getElementById('project-name').value || 'Untitled';
+    
+    // Add company logo
+    const logoUrl = 'https://static.wixstatic.com/media/daaed2_67c14634bac74c9c937f25b28559d874~mv2.png/v1/crop/x_8,y_0,w_1800,h_1996/fill/w_109,h_122,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Gentry-Stinson-Logo.png';
+    
+    // Create header section
+    doc.addImage(logoUrl, 'PNG', 15, 15, 30, 30);
+    doc.setFontSize(20);
+    doc.text('Gentry Stinson', 50, 25);
+    doc.setFontSize(12);
+    doc.text('Phoenix, Arizona', 50, 35);
+    
+    // Add quote information
+    doc.setFontSize(16);
+    doc.text('Cabinet Quote', 15, 60);
+    doc.setFontSize(12);
+    doc.text(`Quote ID: ${quoteId}`, 15, 70);
+    doc.text(`Project: ${projectName}`, 15, 80);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, 90);
+
+    // Add room details
+    let yPosition = 110; // Adjusted starting position
+    rooms.forEach((roomName, index) => {
+        const roomId = `room-${index + 1}`;
+        const roomData = JSON.parse(localStorage.getItem(roomId)) || {};
+        
+        // Room header
+        doc.setFontSize(14);
+        doc.text(roomName, 15, yPosition);
+        yPosition += 10;
+        
+        // Dimensions
+        if (roomData.dimensions) {
+            doc.setFontSize(12);
+            doc.text('Dimensions:', 20, yPosition);
+            yPosition += 10;
+            
+            // Base walls
+            if (roomData.dimensions.base) {
+                Object.entries(roomData.dimensions.base).forEach(([wall, value]) => {
+                    if (value) {
+                        doc.text(`Base ${wall}: ${value}"`, 25, yPosition);
+                        yPosition += 7;
+                    }
+                });
+            }
+            
+            // Upper walls
+            if (roomData.dimensions.upper) {
+                Object.entries(roomData.dimensions.upper).forEach(([wall, value]) => {
+                    if (value) {
+                        doc.text(`Upper ${wall}: ${value}"`, 25, yPosition);
+                        yPosition += 7;
+                    }
+                });
+            }
+        }
+        
+        // Options
+        if (roomData.options) {
+            yPosition += 5;
+            doc.text('Options:', 20, yPosition);
+            yPosition += 10;
+            
+            Object.entries(roomData.options).forEach(([key, value]) => {
+                if (value && value !== '-') {
+                    doc.text(`${key}: ${value}`, 25, yPosition);
+                    yPosition += 7;
+                }
+            });
+        }
+        
+        yPosition += 10;
+        
+// Add-ons for this room
+    const roomAddons = getRoomAddons(roomId);
+    if (roomAddons.length > 0) {
+        yPosition += 5;
+        doc.text('Add-ons:', 20, yPosition);
+        yPosition += 10;
+        roomAddons.forEach(addon => {
+            doc.text(`- ${addon.name}: ${addon.value} ${addon.unit}`, 25, yPosition);
+            yPosition += 7;
+        });
+    }
+
+    yPosition += 10;
+
+
+        // Add new page if needed
+        if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+        }
+    });
+    
+    // Add cost breakdown
+    doc.addPage();
+    doc.setFontSize(16);
+    doc.text('Cost Breakdown', 15, 20);
+    
+    let costYPosition = 40;
+    
+    // Project subtotal
+    const projectSubtotal = calculateProjectSubtotal();
+    doc.setFontSize(12);
+    doc.text(`Project Sub-Total: ${formatMoney(projectSubtotal)}`, 15, costYPosition);
+    costYPosition += 10;
+    
+    // Tax
+    const taxType = document.getElementById('tax-type').value;
+    const taxRate = taxType === 'AZ' ? 0.086 : 0;
+    const tax = projectSubtotal * taxRate;
+    doc.text(`Tax (${taxRate * 100}%): ${formatMoney(tax)}`, 15, costYPosition);
+    costYPosition += 10;
+    
+    // Installation
+    const installationType = document.getElementById('installation-type').value;
+    const installationSurcharge = parseFloat(document.getElementById('installation-surcharge').value) || 0;
+    const installationCost = calculateTotalInstallationCost();
+    doc.text(`Installation: ${formatMoney(installationCost)}`, 15, costYPosition);
+    costYPosition += 10;
+    
+    // Discount
+    const discount = parseFloat(document.getElementById('discount').value) || 0;
+    if (discount > 0) {
+        doc.text(`Discount: -${formatMoney(discount)}`, 15, costYPosition);
+        costYPosition += 10;
+    }
+    
+    // Total
+    const total = projectSubtotal + tax + installationCost - discount;
+    doc.setFontSize(14);
+    doc.text(`Total: ${formatMoney(total)}`, 15, costYPosition);
+    
+    // Add footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+    }
+    
+    // Save the PDF with both quote ID and project name
+    const sanitizedProjectName = projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save(`GS_Cabinet_Quote_${quoteId}_${sanitizedProjectName}.pdf`);
+}
+
+// Helper function to calculate project subtotal
+function calculateProjectSubtotal() {
+    let total = 0;
+    rooms.forEach((roomName, index) => {
+        const roomId = `room-${index + 1}`;
+        const roomData = JSON.parse(localStorage.getItem(roomId)) || {};
+        const linearFootage = calculateRoomLinearFootage(roomData); // Calculate linear footage
+        const calculator = new CabinetCalculator(linearFootage);
+        total += calculator.calculateTotalCost(roomData?.options || {}); // Use optional chaining
+    });
+    return total;
+}
+
+// Helper function to calculate total installation cost
+function calculateTotalInstallationCost() {
+    let total = 0;
+    const installationType = document.getElementById('installation-type').value;
+    const installationSurcharge = parseFloat(document.getElementById('installation-surcharge').value) || 0;
+    
+    if (installationType === 'professional') {
+        rooms.forEach((roomName, index) => {
+            const roomId = `room-${index + 1}`;
+            const savedData = localStorage.getItem(roomId);
+            const roomData = savedData ? JSON.parse(savedData) : {};
+
+            // Use optional chaining and provide a default empty object
+            const roomOptions = roomData?.options || {};  // Correct usage
+            const linearFoot = calculateRoomLinearFootage(roomData);
+
+            if (roomOptions.boxConstruction) { // Access boxConstruction safely
+                total += calculateInstallationCost(roomOptions.boxConstruction, linearFoot);
+            }
+        });
+        total += installationSurcharge;
+    }
+    
+    return total;
+}
+
+// Frontend JavaScript
+async function loadQuote(quoteId) {
+    try {
+        const quote = await MessageSystem.sendMessage('getQuoteById', { quoteId });
+
+        if (!quote) {
+            throw new Error('Quote not found or invalid response from server');
+        }
+
+        console.log('Loaded quote:', quote);
+
+        // Load the saved quote data into the form
+        loadSavedQuote(quote); // Call the new function
+
+        // Close order history modal
+        const orderHistoryModal = document.getElementById('orderHistoryModal');
+        if (orderHistoryModal) {
+            orderHistoryModal.style.display = 'none';
+            orderHistoryModal.remove();
+        }
+
+    } catch (error) {
+        console.error('Load quote error:', error);
+        showNotification('Error loading quote: ' + error.message, 'error');
+    }
+}
+
+async function loadSavedQuote(quote) {
+    console.log('Loading saved quote:', quote);
+
+    rooms = quote.rooms.map(room => room.name);
+    localStorage.setItem('rooms', JSON.stringify(rooms));
+
+    quote.rooms.forEach((room, index) => {
+        const roomId = `room-${index + 1}`;
+        console.log('Processing room:', room);
+
+        const roomData = {
+            dimensions: {
+                base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+                upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
+            },
+            options: {
+                boxConstruction: '',
+                boxMaterial: '',
+                doorMaterial: '',
+                doorStyle: '',
+                finish: '',
+                interiorFinish: '',
+                drawerBox: '',
+                drawerStyle: '',
+                hardware: '',
+                edgeband: ''
+            },
+            addons: []
+        };
+
+        // Merge saved data
+        Object.assign(roomData, room.data);
+
+        // Load add-ons for this room
+        if (Array.isArray(room.data?.addons)) {
+            room.data.addons.forEach(addonData => {
+                const addon = ADDONS[addonData.key];
+                if (addon) {
+                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet);
+                    roomData.addons.push(addonData); // Correctly add add-on data
+                }
+            });
+        }
+
+        localStorage.setItem(roomId, JSON.stringify(roomData));
+    });
+
+    // 3. Update current room ID
+    currentRoomId = 'room-1';
+
+    // 4. Update UI *after* saving room data
+    document.getElementById('quote-id').value = quote.id;
+    document.getElementById('tax-type').value = quote.taxType;
+    document.getElementById('installation-type').value = quote.installationType;
+    document.getElementById('installation-surcharge').value = quote.installationSurcharge || '0.00';
+    document.getElementById('discount').value = quote.discount || '0.00';
+    document.getElementById('project-name').value = quote.projectName;
+
+    // 5. Initialize room selector and load first room
+    initializeRoomSelector();
+    loadRoomData(currentRoomId);
+
+    // 6. Show the quote form *without* clearing data
+    showCreateQuote(false);
+}
+
+function loadRoomData(roomId) {
+    console.log('Loading room data for:', roomId);
+
+    // Reset form fields
+    setWallMeasurements('base', []);
+    setWallMeasurements('upper', []);
+
+    // Load the saved data
+    const savedData = localStorage.getItem(roomId);
+    console.log('Loaded room data from storage:', savedData);
+
+    const defaultRoomData = {
+        dimensions: {
+            base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+            upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
+        },
+        options: {
+            boxConstruction: '',
+            boxMaterial: '',
+            doorMaterial: '',
+            doorStyle: '',
+            finish: '',
+            interiorFinish: '',
+            drawerBox: '',
+            drawerStyle: '',
+            hardware: '',
+            edgeband: ''
+        }
+    };
+
+    const roomData = savedData ? JSON.parse(savedData) : defaultRoomData;
+    console.log('Using room data:', roomData);
+
+    // Set dimensions
+    if (roomData.dimensions) {
+        // Set base walls
+        if (roomData.dimensions.base) {
+            document.getElementById('base-wall-a').value = roomData.dimensions.base.wallA || '';
+            document.getElementById('base-wall-b').value = roomData.dimensions.base.wallB || '';
+            document.getElementById('base-wall-c').value = roomData.dimensions.base.wallC || '';
+            document.getElementById('base-wall-d').value = roomData.dimensions.base.wallD || '';
+        }
+        
+        // Set upper walls
+        if (roomData.dimensions.upper) {
+            document.getElementById('upper-wall-a').value = roomData.dimensions.upper.wallA || '';
+            document.getElementById('upper-wall-b').value = roomData.dimensions.upper.wallB || '';
+            document.getElementById('upper-wall-c').value = roomData.dimensions.upper.wallC || '';
+            document.getElementById('upper-wall-d').value = roomData.dimensions.upper.wallD || '';
+        }
+    }
+
+    // Set options
+    setSelectedOptions(roomData.options || {});
+
+    // Update room name
+    const roomIndex = parseInt(roomId.replace('room-', '')) - 1;
+    document.getElementById('room-name').value = rooms[roomIndex];
+
+    // Update calculations
+    updateLinearFootage();
+    updateCostBreakdown();
+}
+
+function calculateTax() {
+    const taxType = document.getElementById('tax-type').value;
+    const projectSubtotal = calculateProjectSubtotal();
+    const addonsCost = calculateAddonsCost();
+    return taxType === 'AZ' ? (projectSubtotal + addonsCost) * 0.086 : 0;
+}
+
+function calculateFinalTotal() {
+    const projectSubtotal = calculateProjectSubtotal();
+    const addonsCost = calculateAddonsCost();
+    const tax = calculateTax();
+    const installationCost = calculateTotalInstallationCost();
+    const discount = parseFloat(document.getElementById('discount').value) || 0;
+    return projectSubtotal + addonsCost + tax + installationCost - discount;
+}
+
+function setLoadingState(isLoading) {
+    const saveButton = document.querySelector('#saveQuoteModal .save-button');
+    if (saveButton) {
+        saveButton.disabled = isLoading;
+        saveButton.textContent = isLoading ? 'Saving...' : 'Save';
+    }
+
+    // Optional: Add visual feedback
+    const modal = document.getElementById('saveQuoteModal');
+    if (modal) {
+        modal.style.cursor = isLoading ? 'wait' : 'default';
+    }
 }
