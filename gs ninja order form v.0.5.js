@@ -510,89 +510,61 @@ class CabinetCalculator {
 
 // Cost Breakdown Update Function
 function updateCostBreakdown() {
-try {
-    const costBreakdownList = document.getElementById('cost-breakdown-list');
-    if (!costBreakdownList) {
-        console.error('Cost breakdown list element not found');
-        return;
-    }
+    try {
+        const costBreakdownList = document.getElementById('cost-breakdown-list');
+        if (!costBreakdownList) {
+            console.error('Cost breakdown list element not found');
+            return;
+        }
 
-    // Clear previous breakdown
-    costBreakdownList.innerHTML = '';
+        costBreakdownList.innerHTML = ''; // Clear previous breakdown
 
-    let projectSubtotal = 0;
-    let allRoomsCosts = [];
-    let totalInstallationCost = 0;
+        let projectSubtotal = 0;
+        let totalInstallationCost = 0;
 
-    // Calculate costs for each room
-    rooms.forEach((roomName, index) => {
-        const roomId = `room-${index + 1}`; // Correct format
-        const savedData = localStorage.getItem(roomId);
+        rooms.forEach((roomName, index) => {
+            const roomId = `room-${index + 1}`;
+            const savedData = localStorage.getItem(roomId);
             const roomData = savedData ? JSON.parse(savedData) : {
-                dimensions: {
-                    base: {}, upper: {}
-                },
-                options: {}
+                dimensions: { base: {}, upper: {} },
+                options: {},
+                addons: [] // Initialize addons here as well
             };
 
-            // Get room measurements from stored data
+            // Get room measurements
             const baseWalls = roomData.dimensions?.base || {};
             const upperWalls = roomData.dimensions?.upper || {};
-        
-        // Calculate linear footage from stored measurements
-        const baseLinearFoot = Object.values(baseWalls).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
-        const upperLinearFoot = Object.values(upperWalls).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
-        const totalLinearFoot = baseLinearFoot + upperLinearFoot;
+            const baseLinearFoot = Object.values(baseWalls).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
+            const upperLinearFoot = Object.values(upperWalls).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
+            const totalLinearFoot = baseLinearFoot + upperLinearFoot;
 
-        // Get room selections from stored data
-    const selections = {};
-    if (roomData.options) {
-        if (roomData.options.boxConstruction) selections["Box Construction"] = roomData.options.boxConstruction;
-        if (roomData.options.boxMaterial) selections["Box Material"] = roomData.options.boxMaterial;
-        if (roomData.options.doorMaterial) selections["Door Material"] = roomData.options.doorMaterial;
-        if (roomData.options.doorStyle) selections["Door Style"] = roomData.options.doorStyle;
-        if (roomData.options.finish) selections["Finish"] = roomData.options.finish;
-        if (roomData.options.interiorFinish) selections["Interior Finish"] = roomData.options.interiorFinish;
-        if (roomData.options.drawerBox) selections["Drawer Box"] = roomData.options.drawerBox;
-        if (roomData.options.drawerStyle) selections["Drawer Style"] = roomData.options.drawerStyle;
-        if (roomData.options.hardware) selections["Hardware"] = roomData.options.hardware;
-        if (roomData.options.edgeband) selections["Edgeband"] = roomData.options.edgeband;
-    }
+            // Get room selections
+            const selections = { ...roomData.options }; // Use spread operator
 
-    // Filter out null, empty, or default values
-    Object.keys(selections).forEach(key => {
-        if (!selections[key] || selections[key].trim() === '' || selections[key] === '-') {
-            delete selections[key];
-        }
-    });
+            // Calculate room cost
+            const calculator = new CabinetCalculator(totalLinearFoot);
+            let roomSubtotal = calculator.calculateTotalCost(selections);
 
-    // Calculate room cost
-    const calculator = new CabinetCalculator(totalLinearFoot);
-    const roomSubtotal = calculator.calculateTotalCost(selections);
-    projectSubtotal += roomSubtotal;
+            // Add-ons for this room
+            const roomAddons = getRoomAddons(roomId);
+            const roomAddonsCost = calculateRoomAddonsCost(roomId);
+            roomSubtotal += roomAddonsCost; // Add to room subtotal
 
-    // Calculate installation cost for this room
-    const installationType = document.getElementById('installation-type').value;
-    if (installationType === 'professional' && selections["Box Construction"]) {
-        const roomInstallationCost = calculateInstallationCost(selections["Box Construction"], totalLinearFoot);
-        totalInstallationCost += roomInstallationCost;
-    }
+            // Create room section
+            const roomSection = document.createElement('div');
+            roomSection.className = 'room-section';
 
-    // Create room section
-    const roomSection = document.createElement('div');
-    roomSection.className = 'room-section';
+            // Room header
+            const roomHeader = document.createElement('div');
+            roomHeader.className = 'cost-line room-header';
+            roomHeader.innerHTML = `
+                <span>${roomName}</span>
+                <span class="amount">${formatMoney(roomSubtotal)}</span>
+            `;
+            roomSection.appendChild(roomHeader);
 
-    // Room header
-    const roomHeader = document.createElement('div');
-    roomHeader.className = 'cost-line room-header';
-    roomHeader.innerHTML = `
-        <span>${roomName}</span>
-        <span class="amount">${formatMoney(roomSubtotal)}</span>
-    `;
-    roomSection.appendChild(roomHeader);
-
-    // Room details - moved after roomSection is created
-    for (let [component, value] of Object.entries(selections)) {
+            // Room details (options and add-ons)
+            for (let [component, value] of Object.entries(selections)) {
         if (value && value.trim() !== '' && value !== '-') {
             const selectionItem = document.createElement('div');
             selectionItem.className = 'cost-line selection-detail';
@@ -604,72 +576,59 @@ try {
         }
     }
 
-        // Add-ons for this room
-        const roomAddonsCost = calculateRoomAddonsCost(roomId); // New function
-        roomSubtotal += roomAddonsCost; // Add to room subtotal
+            roomAddons.forEach(addonData => {
+                const addonItem = document.createElement('div');
+                addonItem.className = 'cost-line selection-detail';
+                addonItem.innerHTML = `
+                    <span>- ${addonData.name}:</span>
+                    <span>${addonData.value} ${addonData.unit}</span>
+                `;
+                roomSection.appendChild(addonItem); // Append directly to roomSection
+            });
 
-        // Add each add-on as a line item under the room
-        const roomAddonsDiv = document.createElement('div');
-        roomAddonsDiv.className = 'addons-list';
+            costBreakdownList.appendChild(roomSection);
 
-        getRoomAddons(roomId).forEach(addonData => { // New function
-            const addonItem = document.createElement('div');
-            addonItem.className = 'cost-line selection-detail';
-            addonItem.innerHTML = `
-                <span>- ${addonData.name}:</span>
-                <span>${addonData.value} ${addonData.unit}</span>
-            `;
-            roomAddonsDiv.appendChild(addonItem);
+            projectSubtotal += roomSubtotal; // Update project subtotal
+
+            // Calculate installation cost for this room
+            const installationType = document.getElementById('installation-type').value;
+            if (installationType === 'professional' && selections["Box Construction"]) {
+                const roomInstallationCost = calculateInstallationCost(selections["Box Construction"], totalLinearFoot);
+                totalInstallationCost += roomInstallationCost;
+            }
         });
 
-        if (roomAddonsDiv.children.length > 0) {
-            roomSection.appendChild(roomAddonsDiv);
-        }
 
-        costBreakdownList.appendChild(roomSection);
-        
-        // Store room cost for total calculation
-        allRoomsCosts.push({
-            name: roomName,
-            subtotal: roomSubtotal
-        });
-    });
-
-// Calculate add-ons cost and add to subtotal
-    const addonsCost = calculateAddonsCost();
-    projectSubtotal += addonsCost; // Add add-ons to subtotal
-
-    // Get project-wide options
-    const taxType = document.getElementById('tax-type').value;
+        // Get project-wide options
+        const taxType = document.getElementById('tax-type').value;
     const taxRate = taxType === 'AZ' ? 0.086 : 0;
     const installationType = document.getElementById('installation-type').value;
     const installationSurcharge = parseFloat(document.getElementById('installation-surcharge').value) || 0;
     const discount = parseFloat(document.getElementById('discount').value) || 0;
+	
+	if (installationType === 'professional') {
+            totalInstallationCost += installationSurcharge;
+        }
 
-    // Add installation surcharge if applicable
-    if (installationType === 'professional') {
-        totalInstallationCost += installationSurcharge;
-    }
+        // Calculate project totals (addonsCost already included in projectSubtotal)
+        const discountedSubtotal = projectSubtotal - discount;
+        const tax = discountedSubtotal * taxRate;
+        const total = discountedSubtotal + tax + totalInstallationCost;
 
-// Calculate project totals
-const discountedSubtotal = projectSubtotal - discount;
-const tax = discountedSubtotal * taxRate;
-const total = discountedSubtotal + tax + totalInstallationCost;
+        /// Create summary section
+        const summarySection = document.createElement('div');
+        summarySection.className = 'project-summary';
 
-// Create summary section FIRST
-const summarySection = document.createElement('div');
-summarySection.className = 'project-summary';
+        // Project subtotal
+        const subtotalElement = document.createElement('div');
+        subtotalElement.className = 'cost-line subtotal';
+        subtotalElement.innerHTML = `
+            <span>Project Sub-Total</span>
+            <span class="amount">${formatMoney(projectSubtotal)}</span>
+        `;
+        summarySection.appendChild(subtotalElement);
 
-// Project subtotal
-const subtotalElement = document.createElement('div');
-subtotalElement.className = 'cost-line subtotal';
-subtotalElement.innerHTML = `
-    <span>Project Sub-Total</span>
-    <span class="amount">${formatMoney(projectSubtotal)}</span>
-`;
-summarySection.appendChild(subtotalElement);
-
-    // Discount if applicable
+// Discount if applicable
     if (discount > 0) {
         const discountLine = document.createElement('div');
         discountLine.className = 'cost-line';
@@ -680,7 +639,7 @@ summarySection.appendChild(subtotalElement);
         summarySection.appendChild(discountLine);
     }
 
-    // Tax line
+// Tax line
     const taxLine = document.createElement('div');
     taxLine.className = 'cost-line';
     taxLine.innerHTML = taxType === 'AZ' ? `
@@ -1184,34 +1143,30 @@ function cancelClearData() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize rooms with default data
-    rooms = JSON.parse(localStorage.getItem('rooms')) || ['Room 1'];
-    
-    // Initialize default room data if it doesn't exist
-    rooms.forEach((room, index) => {
-        const roomId = `room-${index + 1}`;
-        if (!localStorage.getItem(roomId)) {
-            const defaultRoomData = {
-                dimensions: {
-                    base: { wallA: '', wallB: '', wallC: '', wallD: '' },
-                    upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
-                },
-                options: {
-                    boxConstruction: '',
-                    boxMaterial: '',
-                    doorMaterial: '',
-                    doorStyle: '',
-                    finish: '',
-                    interiorFinish: '',
-                    drawerBox: '',
-                    drawerStyle: '',
-                    hardware: '',
-                    edgeband: ''
-                }
-            };
-            localStorage.setItem(roomId, JSON.stringify(defaultRoomData));
-        }
-    });
+    // Initialize rooms array
+    rooms = ['Room 1'];
+
+    // Initialize default room data for the first room
+    const defaultRoomData = {
+        dimensions: {
+            base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+            upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
+        },
+        options: {
+            boxConstruction: '',
+            boxMaterial: '',
+            doorMaterial: '',
+            doorStyle: '',
+            finish: '',
+            interiorFinish: '',
+            drawerBox: '',
+            drawerStyle: '',
+            hardware: '',
+            edgeband: ''
+        },
+        addons: [] // Initialize addons as an empty array
+    };
+    localStorage.setItem('room-1', JSON.stringify(defaultRoomData));
 
     modal = document.getElementById('roomManageModal');
     closeBtn = document.querySelector('#roomManageModal .close');
@@ -1222,12 +1177,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('main-menu-container').style.display = 'none';
     document.getElementById('create-quote-container').style.display = 'none';
 
- // Add event listener to update cost breakdown when add-on value changes
-    document.getElementById('active-addons').addEventListener('change', '.addon-value', function() {
-        updateCostBreakdown();
-    });
-
-    // Add the new styles
+    // Add new styles
     const newStyles = `
         .project-name {
             font-weight: bold;
@@ -1257,7 +1207,6 @@ document.addEventListener('DOMContentLoaded', function() {
             overflow-y: auto;
         }
     `;
-
     const styleSheet = document.createElement("style");
     styleSheet.innerText = newStyles;
     document.head.appendChild(styleSheet);
@@ -1270,7 +1219,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Save Quote</h3>
-                <span class="close" onclick="cancelSaveQuote()">&times;</span>
+                <span class="close" onclick="cancelSaveQuote()">×</span>
             </div>
             <div class="modal-body">
                 <div class="form-group">
@@ -1282,27 +1231,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button class="cancel" onclick="cancelSaveQuote()">Cancel</button>
                 </div>
             </div>
-        </div>`;
+        </div>
+    `;
     document.body.appendChild(saveQuoteModal);
 
     // Define modal-related functions on window object
-window.saveQuote = function() {
-    const existingQuoteId = document.getElementById('quote-id').value;
-    const existingProjectName = document.getElementById('project-name').value;
+    window.saveQuote = function() {
+        const existingQuoteId = document.getElementById('quote-id').value;
+        const existingProjectName = document.getElementById('project-name').value;
 
-    if (existingQuoteId && existingProjectName) {
-        // This is an existing quote - show overwrite confirmation
-        if (confirm(`Are you sure you want to overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
-            confirmSaveQuote(existingProjectName); // Pass the existing name
+        if (existingQuoteId && existingProjectName) {
+            if (confirm(`Overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
+                confirmSaveQuote(existingProjectName);
+            }
+        } else {
+            const modal = document.getElementById('saveQuoteModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
         }
-    } else {
-        // This is a new quote - show the save modal
-        const modal = document.getElementById('saveQuoteModal');
-        if (modal) {
-            modal.style.display = 'block';
-        }
-    }
-};
+    };
 
     window.cancelSaveQuote = function() {
         const modal = document.getElementById('saveQuoteModal');
@@ -1382,10 +1330,13 @@ window.saveQuote = function() {
     }
 };
 
-    // Initialize the UI
+    // Initialize UI and calculations *after* setting up default data
     initializeRoomSelector();
     initializeEventListeners();
-initializeAddons();
+    initializeAddons();
+    loadRoomData(currentRoomId); // Load initial room data
+    updateLinearFootage(); // Calculate initial linear footage
+    updateCostBreakdown(); // Calculate initial cost breakdown
 
     // Add event listeners
     const clearDataButton = document.getElementById('clear-data-button');
@@ -1398,6 +1349,7 @@ initializeAddons();
     document.getElementById('installation-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-surcharge').addEventListener('input', updateCostBreakdown);
     document.getElementById('discount').addEventListener('input', updateCostBreakdown);
+    document.getElementById('active-addons').addEventListener('change', '.addon-value', updateCostBreakdown);
 
     // Update window click handler for all modals
     window.onclick = function(event) {
@@ -1650,29 +1602,16 @@ async function loadSavedQuote(quote) {
     rooms = quote.rooms.map(room => room.name);
     localStorage.setItem('rooms', JSON.stringify(rooms));
 
-    // 2. Save room data to localStorage
+    // 2. Process each room and its data/add-ons
     quote.rooms.forEach((room, index) => {
         const roomId = `room-${index + 1}`;
-        if (room.data && room.data.addons) { // Check if addons exist
-            room.data.addons.forEach(addonData => {
-                const addon = ADDONS[addonData.key]; // Find addon by key
-                if (addon) {
-                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet); // New function
-                }
-            });
-        }
-    });
         console.log('Processing room:', room);
-        
+
         // Make sure we have valid room data
         const roomData = {
             dimensions: {
-                base: {
-                    wallA: '', wallB: '', wallC: '', wallD: ''
-                },
-                upper: {
-                    wallA: '', wallB: '', wallC: '', wallD: ''
-                }
+                base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+                upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
             },
             options: {
                 boxConstruction: '',
@@ -1686,29 +1625,33 @@ async function loadSavedQuote(quote) {
                 hardware: '',
                 edgeband: ''
             },
+            addons: [], // Initialize addons array
             ...room.data // Spread the saved data over our default structure
         };
+
+        // Load add-ons for this room (now inside the loop)
+        if (room.data && room.data.addons) {
+            room.data.addons.forEach(addonData => {
+                const addon = ADDONS[addonData.key];
+                if (addon) {
+                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet);
+                    // Add add-on data to roomData
+                    roomData.addons.push(addonData); // Add this line
+                }
+            });
+        }
 
         console.log(`Saving room data for ${roomId}:`, roomData);
         localStorage.setItem(roomId, JSON.stringify(roomData));
     });
 
-    // Update the title header with the project name
-    const createQuoteHeader = document.querySelector('#create-quote-container h2');
-    if (createQuoteHeader) {
-        createQuoteHeader.textContent = `Edit Quote: ${quote.projectName}`;
-    }
 
     // 3. Update current room ID
     currentRoomId = 'room-1';
 
     // 4. Update UI
     document.getElementById('quote-id').value = quote.id;
-    document.getElementById('tax-type').value = quote.taxType;
-    document.getElementById('installation-type').value = quote.installationType;
-    document.getElementById('installation-surcharge').value = quote.installationSurcharge || '0.00';
-    document.getElementById('discount').value = quote.discount || '0.00';
-document.getElementById('project-name').value = quote.projectName;
+    // ... (rest of UI updates)
 
     // 5. Initialize room selector and load first room
     initializeRoomSelector();
@@ -1876,43 +1819,43 @@ const ADDONS = {
         name: "Base Interior Cabinet Lighting",
         price: 9.375,
         type: "linear",
-        unit: "per linear ft."
+        unit: "linear ft."
     },
     toeKickLighting: {
         name: "Toe-Kick Lighting",
         price: 9.375,
         type: "linear",
-        unit: "per linear ft."
+        unit: "linear ft."
     },
     drawerCharging: {
         name: "Drawer Hidden Charging Station",
         price: 635.00,
         type: "quantity",
-        unit: "each"
+        unit: "quantity"
     },
     trashPulloutSoft: {
         name: "Base Trash Pullout w/ Soft Close",
         price: 550.00,
         type: "quantity",
-        unit: "each"
+        unit: "quantity"
     },
     trashPulloutBasic: {
         name: "Basic Trash Pullout",
         price: 300.00,
         type: "quantity",
-        unit: "each"
+        unit: "quantity"
     },
     underCabinetLighting: {
         name: "Under-Cabinet Lighting",
         price: 9.375,
         type: "linear",
-        unit: "per linear ft."
+        unit: "linear ft."
     },
     upperInteriorLighting: {
         name: "Upper Interior Cabinet Lighting",
         price: 9.375,
         type: "linear",
-        unit: "per linear ft."
+        unit: "linear ft."
     },
     floatingShelves: {
         name: "Floating Shelves",
@@ -1924,13 +1867,13 @@ const ADDONS = {
         name: "Floating Shelves + LED Lighting",
         price: 60.00,
         type: "linear",
-        unit: "per linear foot"
+        unit: "linear foot"
     },
     upperPulloutRack: {
         name: "Upper 4-Shelf Pullout Rack w/ Soft Close",
         price: 300.00,
         type: "quantity",
-        unit: "each"
+        unit: "quantity"
     }
 };
 
