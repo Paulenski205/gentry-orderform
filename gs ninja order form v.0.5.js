@@ -1651,10 +1651,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Define modal-related functions on window object
-    window.saveQuote = function() { /* ... */ };
-    window.cancelSaveQuote = function() { /* ... */ };
-
     // Initialize UI and calculations *after* setting up default data
     initializeRoomSelector();
     initializeEventListeners();
@@ -1685,7 +1681,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('installation-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-surcharge').addEventListener('input', updateCostBreakdown);
     document.getElementById('discount').addEventListener('input', updateCostBreakdown);
-    document.getElementById('active-addons').addEventListener('change', '.addon-value', updateCostBreakdown);
+    document.getElementById('active-addons').addEventListener('change', function(event) {
+    if (event.target.classList.contains('addon-value')) {
+        updateCostBreakdown();
+    }
+});
 
     // Update window click handler for all modals
     window.onclick = function(event) {
