@@ -496,16 +496,20 @@ class CabinetCalculator {
         return 0; // Edgeband is input only, no cost
     }
 
-    calculateTotalCost(selections) {
-        let totalCost = 0;
-        for (let component in selections) {
-            if (this.components[component] && selections[component]) {
-                let cost = this.components[component](selections[component]);
-                totalCost += cost;
-            }
+    // Add debug logging to your calculateTotalCost method
+calculateTotalCost(selections) {
+    console.log('Calculating total cost with selections:', selections);
+    let totalCost = 0;
+    for (let component in selections) {
+        if (this.components[component] && selections[component]) {
+            console.log(`Calculating cost for ${component}: ${selections[component]}`);
+            let cost = this.components[component](selections[component]);
+            console.log(`Cost for ${component}: ${cost}`);
+            totalCost += cost;
         }
-        return totalCost;
     }
+    console.log('Total cost:', totalCost);
+    return totalCost;
 }
 
 // Cost Breakdown Update Function
@@ -540,10 +544,12 @@ function updateCostBreakdown() {
 
             // Get room selections
             const selections = { ...roomData.options }; // Use spread operator
+            console.log('Room selections:', selections);
 
             // Calculate room cost
             const calculator = new CabinetCalculator(totalLinearFoot);
             let roomSubtotal = calculator.calculateTotalCost(selections);
+            console.log('Room subtotal:', roomSubtotal);
 
             // Add-ons for this room
             const roomAddons = getRoomAddons(roomId);
@@ -974,16 +980,16 @@ function setWallDimensions(section, dimensions) {
 
 function getSelectedOptions() {
     const options = {
-        boxConstruction: document.getElementById('box-construction').value,
-        boxMaterial: document.getElementById('box-material').value,
-        doorMaterial: document.getElementById('door-material').value,
-        doorStyle: document.getElementById('door-style').value,
-        finish: document.getElementById('finish').value,
-        interiorFinish: document.getElementById('interior-finish').value,
-        drawerBox: document.getElementById('drawer-box').value,
-        drawerStyle: document.getElementById('drawer-style').value,
-        hardware: document.getElementById('hardware').value,
-        edgeband: document.getElementById('edgeband').value
+        "Box Construction": document.getElementById('box-construction').value,
+        "Box Material": document.getElementById('box-material').value,
+        "Door Material": document.getElementById('door-material').value,
+        "Door Style": document.getElementById('door-style').value,
+        "Finish": document.getElementById('finish').value,
+        "Interior Finish": document.getElementById('interior-finish').value,
+        "Drawer Box": document.getElementById('drawer-box').value,
+        "Drawer Style": document.getElementById('drawer-style').value,
+        "Hardware": document.getElementById('hardware').value,
+        "Edgeband": document.getElementById('edgeband').value
     };
 
     console.log('Getting selected options:', options);
@@ -1552,10 +1558,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
  // Add event listener to update cost breakdown when add-on value changes
     document.getElementById('active-addons').addEventListener('change', function(event) {
-    if (event.target.classList.contains('addon-value')) { // Check if the changed element is an addon-value input
-        updateCostBreakdown();
-    }
-});
+        if (event.target.classList.contains('addon-value')) {
+            updateCostBreakdown();
+        }
+    });
 
     // Set initial display states
     document.getElementById('welcome-container').style.display = 'block';
@@ -1928,9 +1934,17 @@ async function loadQuote(quoteId) {
 async function loadSavedQuote(quote) {
     console.log('Loading saved quote:', quote);
 
+    // 1. Update rooms array and localStorage
     rooms = quote.rooms.map(room => room.name);
     localStorage.setItem('rooms', JSON.stringify(rooms));
 
+    // Clear existing add-ons (IMPORTANT!)
+    const activeAddons = document.getElementById('active-addons');
+    if (activeAddons) {
+        activeAddons.innerHTML = ''; // Clear existing add-ons
+    }
+
+    // 2. Process each room and its data/add-ons
     quote.rooms.forEach((room, index) => {
         const roomId = `room-${index + 1}`;
         console.log('Processing room:', room);
@@ -1955,20 +1969,20 @@ async function loadSavedQuote(quote) {
             addons: []
         };
 
-        // Merge saved data
-        Object.assign(roomData, room.data);
+        // Merge the saved data into roomData
+        Object.assign(roomData, room.data || {}); // Use || {} to handle missing data
 
         // Load add-ons for this room
-        if (Array.isArray(room.data?.addons)) {
-            room.data.addons.forEach(addonData => {
+        if (Array.isArray(roomData.addons)) { // Check if addons is an array
+            roomData.addons.forEach(addonData => {
                 const addon = ADDONS[addonData.key];
                 if (addon) {
                     addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet);
-                    roomData.addons.push(addonData); // Correctly add add-on data
                 }
             });
         }
 
+        console.log(`Saving room data for ${roomId}:`, roomData);
         localStorage.setItem(roomId, JSON.stringify(roomData));
     });
 
