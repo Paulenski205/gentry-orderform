@@ -510,6 +510,7 @@ calculateTotalCost(selections) {
     }
     console.log('Total cost:', totalCost);
     return totalCost;
+  }
 }
 
 // Cost Breakdown Update Function
@@ -1330,7 +1331,7 @@ function addSelectedAddon() {
                ${addon.type === 'quantity' ? 'pattern="[0-9]*"' : ''}
                maxlength="3">
         <span>${addon.unit}</span>
-        <span class="addon-total">${formatMoney(0)}</span>
+        <span class="addon-total"></span>
         <button class="remove-addon" onclick="removeAddon(this)">×</button>
     `;
     
@@ -1681,11 +1682,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('installation-type').addEventListener('change', updateCostBreakdown);
     document.getElementById('installation-surcharge').addEventListener('input', updateCostBreakdown);
     document.getElementById('discount').addEventListener('input', updateCostBreakdown);
-    document.getElementById('active-addons').addEventListener('change', function(event) {
-    if (event.target.classList.contains('addon-value')) {
-        updateCostBreakdown();
-    }
-});
 
     // Update window click handler for all modals
     window.onclick = function(event) {
