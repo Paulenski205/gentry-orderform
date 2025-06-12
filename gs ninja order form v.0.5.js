@@ -1425,7 +1425,7 @@ function addAddonToRoom(roomId, addon, value, linearFeet) {
                ${addon.type === 'quantity' ? 'pattern="[0-9]*"' : ''}
                maxlength="3">
         <span>${addon.unit}</span>
-        <span class="addon-total">${formatMoney(addon.price * inputValue)}</span>
+        <span class="addon-total"></span>
         <button class="remove-addon" onclick="removeAddon(this)">×</button>
     `;
 
