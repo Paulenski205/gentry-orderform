@@ -936,6 +936,8 @@ function calculateLinearFootage(dimensions) {
 function saveCurrentRoomData(roomId = currentRoomId) {
     console.log('Saving data for:', roomId);
 
+    const roomAddons = getRoomAddons(roomId);
+
     const roomData = {
         dimensions: {
             base: {
@@ -952,7 +954,7 @@ function saveCurrentRoomData(roomId = currentRoomId) {
             }
         },
         options: getSelectedOptions(),
-        addons: getRoomAddons(roomId).map(addon => ({ // Correct add-ons saving
+        addons: roomAddons.map(addon => ({
             key: addon.key,
             value: addon.value,
             linearFeet: addon.type === 'linear' ? addon.value : undefined
@@ -1064,6 +1066,12 @@ function clearData() {
     document.getElementById('installation-type').selectedIndex = 0;
     document.getElementById('installation-surcharge').value = '0.00';
     document.getElementById('discount').value = '0.00';
+
+// Clear active add-ons
+    const activeAddons = document.getElementById('active-addons');
+    if (activeAddons) {
+        activeAddons.innerHTML = '';
+    }
 
     // 5. Update UI
     initializeRoomSelector();
@@ -1295,53 +1303,61 @@ function initializeAddons() {
 function addSelectedAddon() {
     const select = document.getElementById('addon-select');
     const addonKey = select.value;
-    
+
     if (!addonKey) return;
-    
+
     const addon = ADDONS[addonKey];
     const activeAddons = document.getElementById('active-addons');
-    
+
+    // Get the container for the current room's add-ons
+    let roomAddonsContainer = document.getElementById(`room-addons-${currentRoomId}`);
+    if (!roomAddonsContainer) {
+        roomAddonsContainer = document.createElement('div');
+        roomAddonsContainer.id = `room-addons-${currentRoomId}`;
+        roomAddonsContainer.className = 'active-addons'; // Use the same class as the main add-ons container
+        // Insert the container after the upper walls section
+        const upperWallsSection = document.querySelector('.measurements-section:last-of-type');
+        if (upperWallsSection) {
+            upperWallsSection.parentNode.insertBefore(roomAddonsContainer, upperWallsSection.nextSibling);
+        } else {
+            console.error('Could not find upper walls section to insert add-ons container');
+            return; // Or handle the error as needed
+        }
+    }
+
+    // Check if add-on already exists for this room
+    const existingAddon = roomAddonsContainer.querySelector(`.addon-item[data-addon-key="${addonKey}"]`);
+    if (existingAddon) {
+        alert(`This add-on already exists for ${rooms[parseInt(currentRoomId.replace('room-', '')) - 1]}`);
+        return;
+    }
+
     // Create addon item
     const addonItem = document.createElement('div');
     addonItem.className = 'addon-item';
     addonItem.dataset.addonKey = addonKey;
-    
+    addonItem.dataset.roomId = currentRoomId; // Associate with room
+
     const inputType = addon.type === 'linear' ? 'number' : 'number';
     const inputStep = addon.type === 'linear' ? '0.01' : '1';
     const inputMin = addon.type === 'linear' ? '0' : '1';
     const defaultValue = addon.type === 'linear' ? '' : '1';
 
-// Associate add-on with the current room
-    addonItem.dataset.roomId = currentRoomId; // Add roomId data attribute
-
-    // Add data attributes for saving (IMPORTANT - these were missing)
-    addonItem.dataset.addonName = addon.name;
-    addonItem.dataset.addonPrice = addon.price;
-    addonItem.dataset.addonType = addon.type;
-    addonItem.dataset.addonUnit = addon.unit;
-    
     addonItem.innerHTML = `
         <span>${addon.name}</span>
-        <input type="${inputType}" 
-               step="${inputStep}" 
-               min="${inputMin}" 
-               value="${defaultValue}" 
-               class="addon-value" 
-               onchange="updateAddonTotal(this)"
-               ${addon.type === 'quantity' ? 'pattern="[0-9]*"' : ''}
-               maxlength="3">
-        <span>${addon.unit}</span>
-        <span class="addon-total"></span>
+        <input type="${inputType}" ... > </input> <span>${addon.unit}</span>
+        <span class="addon-total">${formatMoney(0)}</span>
         <button class="remove-addon" onclick="removeAddon(this)">×</button>
     `;
-    
-    activeAddons.appendChild(addonItem);
-    select.value = ''; // Reset select
+
+    roomAddonsContainer.appendChild(addonItem); // Append to the room's container
+    select.value = '';
     updateAddonTotal(addonItem.querySelector('.addon-value'));
     updateCostBreakdown();
 }
 
 // Update addon total
+
 function updateAddonTotal(input) {
     const addonItem = input.closest('.addon-item');
     const addonKey = addonItem.dataset.addonKey;
@@ -1353,6 +1369,7 @@ function updateAddonTotal(input) {
     addonItem.querySelector('.addon-total').textContent = formatMoney(total);
     updateCostBreakdown();
 }
+
 // Remove addon
 function removeAddon(button) {
     const addonItem = button.closest('.addon-item');
@@ -1374,19 +1391,19 @@ function calculateAddonsCost() {
 // Helper functions for add-ons
 function getRoomAddons(roomId) {
     const addons = [];
-    const addonItems = document.querySelectorAll(`.addon-item[data-room-id="${roomId}"]`); // Correct selector
+    const addonItems = document.querySelectorAll(`.addon-item[data-room-id="${roomId}"]`);
     addonItems.forEach(item => {
-        const addonKey = item.dataset.addonKey; // Get the key directly from the dataset
-        const addon = ADDONS[addonKey]; // Get the addon object
+        const addonKey = item.dataset.addonKey;
+        const addon = ADDONS[addonKey]; // Get the addon from ADDONS
         const value = parseFloat(item.querySelector('.addon-value').value) || 0;
         if (value > 0) {
             addons.push({
-                key: addonKey, // Include the key here
+                key: addonKey,
                 name: addon.name,
                 value: value,
                 unit: addon.unit,
                 price: addon.price * value,
-                type: addon.type
+                type: addon.type // Include the type here
             });
         }
     });
@@ -1398,8 +1415,7 @@ function calculateRoomAddonsCost(roomId) {
 }
 
 // New function to add an add-on to a specific room
-function addAddonToRoom(roomId, addon, value, linearFeet) {
-    const activeAddons = document.getElementById('active-addons');
+function addAddonToRoom(roomId, addon, value, linearFeet, container) {
     const addonItem = document.createElement('div');
     addonItem.className = 'addon-item';
     addonItem.dataset.roomId = roomId; // Associate with room
@@ -1425,11 +1441,11 @@ function addAddonToRoom(roomId, addon, value, linearFeet) {
                ${addon.type === 'quantity' ? 'pattern="[0-9]*"' : ''}
                maxlength="3">
         <span>${addon.unit}</span>
-        <span class="addon-total"></span>
+        <span class="addon-total">${formatMoney(addon.price * inputValue)}</span>
         <button class="remove-addon" onclick="removeAddon(this)">×</button>
     `;
 
-    activeAddons.appendChild(addonItem);
+    container.appendChild(addonItem); // Append to the specified container, not activeAddons
     updateAddonTotal(addonItem.querySelector('.addon-value'));
     updateCostBreakdown();
 }
@@ -1437,21 +1453,10 @@ function addAddonToRoom(roomId, addon, value, linearFeet) {
 // Helper function to get all add-ons
 function getAddons() {
     const addons = [];
-    document.querySelectorAll('.addon-item').forEach(item => {
-        const addonKey = item.dataset.addonKey;
-        const addon = ADDONS[addonKey];
-        const value = parseFloat(item.querySelector('.addon-value').value) || 0;
-        if (value > 0) {
-            addons.push({
-                key: addonKey,
-                name: addon.name,
-                value: value,
-                unit: addon.unit,
-                price: addon.price * value,
-                type: addon.type,
-                roomId: item.dataset.roomId // Include roomId
-            });
-        }
+    rooms.forEach((roomName, index) => {  // Iterate through each room
+        const roomId = `room-${index + 1}`;
+        const roomAddons = getRoomAddons(roomId); // Get add-ons for this room
+        addons.push(...roomAddons); // Add the room's add-ons to the main array
     });
     return addons;
 }
@@ -1494,7 +1499,7 @@ async function confirmSaveQuote(existingProjectName = null) {
                 installationSurcharge: parseFloat(document.getElementById('installation-surcharge').value) || 0,
                 discount: parseFloat(document.getElementById('discount').value) || 0,
                 finalTotal: calculateFinalTotal(),
-				addons: getAddons()
+				        addons: getAddons()
             };
 
             console.log('Sending quote data:', quoteData);
@@ -1965,20 +1970,35 @@ async function loadSavedQuote(quote) {
             addons: []
         };
 
-        // Merge the saved data into roomData
-        Object.assign(roomData, room.data || {}); // Use || {} to handle missing data
+        Object.assign(roomData, room.data || {});
 
-        // Load add-ons for this room
-        if (Array.isArray(roomData.addons)) { // Check if addons is an array
+        // Create room-specific add-ons container
+        let roomAddonsContainer = document.getElementById(`room-addons-${roomId}`);
+        if (!roomAddonsContainer) {
+            roomAddonsContainer = document.createElement('div');
+            roomAddonsContainer.id = `room-addons-${roomId}`;
+            roomAddonsContainer.className = 'active-addons'; // Add class here
+            const upperWallsSection = document.getElementById(`upper-walls`);
+            if (upperWallsSection) {
+                upperWallsSection.parentNode.insertBefore(roomAddonsContainer, upperWallsSection.nextSibling);
+            } else {
+                // Handle the case where upper-walls doesn't exist
+                console.error("Could not find 'upper-walls' element to insert add-ons container");
+            }
+        }
+
+        roomAddonsContainer.innerHTML = ''; // Clear existing add-ons for this room
+
+         if (Array.isArray(roomData.addons)) {
             roomData.addons.forEach(addonData => {
                 const addon = ADDONS[addonData.key];
                 if (addon) {
-                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet);
+                    // Add add-on to the ROOM'S container
+                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer); // Pass container
                 }
             });
         }
 
-        console.log(`Saving room data for ${roomId}:`, roomData);
         localStorage.setItem(roomId, JSON.stringify(roomData));
     });
 
