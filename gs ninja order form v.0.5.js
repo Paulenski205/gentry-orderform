@@ -317,20 +317,19 @@ function getRoomData(roomId) {
             }
         },
         options: {
-            boxConstruction: document.getElementById('box-construction').value,
-            boxMaterial: document.getElementById('box-material').value,
-            doorMaterial: document.getElementById('door-material').value,
-            doorStyle: document.getElementById('door-style').value,
-            finish: document.getElementById('finish').value,
-            interiorFinish: document.getElementById('interior-finish').value,
-            drawerBox: document.getElementById('drawer-box').value,
-            drawerStyle: document.getElementById('drawer-style').value,
-            hardware: document.getElementById('hardware').value,
-            edgeband: document.getElementById('edgeband').value
+            "Box Construction": document.getElementById('box-construction').value,
+            "Box Material": document.getElementById('box-material').value,
+            "Door Material": document.getElementById('door-material').value,
+            "Door Style": document.getElementById('door-style').value,
+            "Finish": document.getElementById('finish').value,
+            "Interior Finish": document.getElementById('interior-finish').value,
+            "Drawer Box": document.getElementById('drawer-box').value,
+            "Drawer Style": document.getElementById('drawer-style').value,
+            "Hardware": document.getElementById('hardware').value,
+            "Edgeband": document.getElementById('edgeband').value
         }
     };
 }
-
 
 // Utility Functions
 function generateQuoteId() {
@@ -807,24 +806,24 @@ function addNewRoom() {
     localStorage.setItem('rooms', JSON.stringify(rooms));
 
     // Initialize empty data structure for new room
-    const emptyRoomData = {
-        dimensions: {
-            base: { wallA: '', wallB: '', wallC: '', wallD: '' },
-            upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
-        },
-        options: {
-            boxConstruction: '-',
-            boxMaterial: '-',
-            doorMaterial: '-',
-            doorStyle: '-',
-            finish: '-',
-            interiorFinish: '-',
-            drawerBox: '-',
-            drawerStyle: '-',
-            hardware: '',
-            edgeband: ''
-        }
-    };
+const emptyRoomData = {
+    dimensions: {
+        base: { wallA: '', wallB: '', wallC: '', wallD: '' },
+        upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
+    },
+    options: {
+        "Box Construction": '-',
+        "Box Material": '-',
+        "Door Material": '-',
+        "Door Style": '-',
+        "Finish": '-',
+        "Interior Finish": '-',
+        "Drawer Box": '-',
+        "Drawer Style": '-',
+        "Hardware": '',
+        "Edgeband": ''
+    }
+};
 
     // Save empty data for new room
     localStorage.setItem(newRoomId, JSON.stringify(emptyRoomData));
@@ -1307,20 +1306,20 @@ function addSelectedAddon() {
     if (!addonKey) return;
 
     const addon = ADDONS[addonKey];
-    const activeAddons = document.getElementById('active-addons');
-
+    
     // Get the container for the current room's add-ons
     let roomAddonsContainer = document.getElementById(`room-addons-${currentRoomId}`);
     if (!roomAddonsContainer) {
         roomAddonsContainer = document.createElement('div');
         roomAddonsContainer.id = `room-addons-${currentRoomId}`;
         roomAddonsContainer.className = 'active-addons'; // Use the same class as the main add-ons container
-        // Insert the container after the upper walls section
-        const upperWallsSection = document.querySelector('.measurements-section:last-of-type');
-        if (upperWallsSection) {
-            upperWallsSection.parentNode.insertBefore(roomAddonsContainer, upperWallsSection.nextSibling);
+        
+        // Insert the container after the addon-section
+        const addonSection = document.querySelector('.addon-section');
+        if (addonSection) {
+            addonSection.appendChild(roomAddonsContainer);
         } else {
-            console.error('Could not find upper walls section to insert add-ons container');
+            console.error('Could not find addon-section to append add-ons container');
             return; // Or handle the error as needed
         }
     }
@@ -1337,6 +1336,10 @@ function addSelectedAddon() {
     addonItem.className = 'addon-item';
     addonItem.dataset.addonKey = addonKey;
     addonItem.dataset.roomId = currentRoomId; // Associate with room
+    addonItem.dataset.addonName = addon.name;
+    addonItem.dataset.addonPrice = addon.price;
+    addonItem.dataset.addonType = addon.type;
+    addonItem.dataset.addonUnit = addon.unit;
 
     const inputType = addon.type === 'linear' ? 'number' : 'number';
     const inputStep = addon.type === 'linear' ? '0.01' : '1';
@@ -1345,13 +1348,21 @@ function addSelectedAddon() {
 
     addonItem.innerHTML = `
         <span>${addon.name}</span>
-        <input type="${inputType}" ... > </input> <span>${addon.unit}</span>
+        <input type="${inputType}" 
+               step="${inputStep}" 
+               min="${inputMin}" 
+               value="${defaultValue}" 
+               class="addon-value" 
+               onchange="updateAddonTotal(this)"
+               ${addon.type === 'quantity' ? 'pattern="[0-9]*"' : ''}
+               maxlength="3">
+        <span>${addon.unit}</span>
         <span class="addon-total">${formatMoney(0)}</span>
         <button class="remove-addon" onclick="removeAddon(this)">×</button>
     `;
 
     roomAddonsContainer.appendChild(addonItem); // Append to the room's container
-    select.value = '';
+    select.value = ''; // Reset select
     updateAddonTotal(addonItem.querySelector('.addon-value'));
     updateCostBreakdown();
 }
@@ -1415,11 +1426,29 @@ function calculateRoomAddonsCost(roomId) {
 }
 
 // New function to add an add-on to a specific room
-function addAddonToRoom(roomId, addon, value, linearFeet, container) {
+function addAddonToRoom(roomId, addon, value, linearFeet, container = null) {
+    // If no container is provided, use the active-addons container or create a room-specific container
+    if (!container) {
+        container = document.getElementById(`room-addons-${roomId}`);
+        if (!container) {
+            container = document.createElement('div');
+            container.id = `room-addons-${roomId}`;
+            container.className = 'active-addons';
+            
+            const addonSection = document.querySelector('.addon-section');
+            if (addonSection) {
+                addonSection.appendChild(container);
+            } else {
+                // Fallback to the global active-addons container
+                container = document.getElementById('active-addons');
+            }
+        }
+    }
+
     const addonItem = document.createElement('div');
     addonItem.className = 'addon-item';
-    addonItem.dataset.roomId = roomId; // Associate with room
-    addonItem.dataset.addonKey = Object.keys(ADDONS).find(key => ADDONS[key] === addon); // Store addon key
+    addonItem.dataset.roomId = roomId;
+    addonItem.dataset.addonKey = Object.keys(ADDONS).find(key => ADDONS[key] === addon);
     addonItem.dataset.addonName = addon.name;
     addonItem.dataset.addonPrice = addon.price;
     addonItem.dataset.addonType = addon.type;
@@ -1445,7 +1474,7 @@ function addAddonToRoom(roomId, addon, value, linearFeet, container) {
         <button class="remove-addon" onclick="removeAddon(this)">×</button>
     `;
 
-    container.appendChild(addonItem); // Append to the specified container, not activeAddons
+    container.appendChild(addonItem);
     updateAddonTotal(addonItem.querySelector('.addon-value'));
     updateCostBreakdown();
 }
@@ -1895,8 +1924,10 @@ function calculateTotalInstallationCost() {
             const roomOptions = roomData?.options || {};  // Correct usage
             const linearFoot = calculateRoomLinearFootage(roomData);
 
-            if (roomOptions.boxConstruction) { // Access boxConstruction safely
-                total += calculateInstallationCost(roomOptions.boxConstruction, linearFoot);
+            // Check for both camelCase and title case property names
+            const boxConstruction = roomOptions["Box Construction"] || roomOptions.boxConstruction;
+            if (boxConstruction) {
+                total += calculateInstallationCost(boxConstruction, linearFoot);
             }
         });
         total += installationSurcharge;
@@ -1945,6 +1976,11 @@ async function loadSavedQuote(quote) {
         activeAddons.innerHTML = ''; // Clear existing add-ons
     }
 
+    // Remove any existing room-specific add-on containers
+    document.querySelectorAll('[id^="room-addons-"]').forEach(container => {
+        container.remove();
+    });
+
     // 2. Process each room and its data/add-ons
     quote.rooms.forEach((room, index) => {
         const roomId = `room-${index + 1}`;
@@ -1956,45 +1992,42 @@ async function loadSavedQuote(quote) {
                 upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
             },
             options: {
-                boxConstruction: '',
-                boxMaterial: '',
-                doorMaterial: '',
-                doorStyle: '',
-                finish: '',
-                interiorFinish: '',
-                drawerBox: '',
-                drawerStyle: '',
-                hardware: '',
-                edgeband: ''
+                "Box Construction": '',
+                "Box Material": '',
+                "Door Material": '',
+                "Door Style": '',
+                "Finish": '',
+                "Interior Finish": '',
+                "Drawer Box": '',
+                "Drawer Style": '',
+                "Hardware": '',
+                "Edgeband": ''
             },
             addons: []
         };
 
+        // Merge the saved data into roomData
         Object.assign(roomData, room.data || {});
 
-        // Create room-specific add-ons container
-        let roomAddonsContainer = document.getElementById(`room-addons-${roomId}`);
-        if (!roomAddonsContainer) {
-            roomAddonsContainer = document.createElement('div');
-            roomAddonsContainer.id = `room-addons-${roomId}`;
-            roomAddonsContainer.className = 'active-addons'; // Add class here
-            const upperWallsSection = document.getElementById(`upper-walls`);
-            if (upperWallsSection) {
-                upperWallsSection.parentNode.insertBefore(roomAddonsContainer, upperWallsSection.nextSibling);
-            } else {
-                // Handle the case where upper-walls doesn't exist
-                console.error("Could not find 'upper-walls' element to insert add-ons container");
-            }
+        // Create a container for this room's add-ons
+        let roomAddonsContainer = document.createElement('div');
+        roomAddonsContainer.id = `room-addons-${roomId}`;
+        roomAddonsContainer.className = 'active-addons';
+        roomAddonsContainer.style.display = roomId === currentRoomId ? 'block' : 'none';
+        
+        // Append the container to the addon-section
+        const addonSection = document.querySelector('.addon-section');
+        if (addonSection) {
+            addonSection.appendChild(roomAddonsContainer);
         }
 
-        roomAddonsContainer.innerHTML = ''; // Clear existing add-ons for this room
-
-         if (Array.isArray(roomData.addons)) {
+        // Load add-ons for this room
+        if (Array.isArray(roomData.addons)) {
             roomData.addons.forEach(addonData => {
                 const addon = ADDONS[addonData.key];
                 if (addon) {
-                    // Add add-on to the ROOM'S container
-                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer); // Pass container
+                    // Add add-on to the room's container
+                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer);
                 }
             });
         }
@@ -2038,16 +2071,16 @@ function loadRoomData(roomId) {
             upper: { wallA: '', wallB: '', wallC: '', wallD: '' }
         },
         options: {
-            boxConstruction: '',
-            boxMaterial: '',
-            doorMaterial: '',
-            doorStyle: '',
-            finish: '',
-            interiorFinish: '',
-            drawerBox: '',
-            drawerStyle: '',
-            hardware: '',
-            edgeband: ''
+            "Box Construction": '',
+            "Box Material": '',
+            "Door Material": '',
+            "Door Style": '',
+            "Finish": '',
+            "Interior Finish": '',
+            "Drawer Box": '',
+            "Drawer Style": '',
+            "Hardware": '',
+            "Edgeband": ''
         }
     };
 
@@ -2072,6 +2105,11 @@ function loadRoomData(roomId) {
             document.getElementById('upper-wall-d').value = roomData.dimensions.upper.wallD || '';
         }
     }
+
+    // Show/hide add-ons containers based on the current room
+    document.querySelectorAll('[id^="room-addons-"]').forEach(container => {
+        container.style.display = container.id === `room-addons-${roomId}` ? 'block' : 'none';
+    });
 
     // Set options
     setSelectedOptions(roomData.options || {});
