@@ -1437,7 +1437,7 @@ function addAddonToRoom(roomId, addon, value, linearFeet, container) {
     addonItem.dataset.addonUnit = addon.unit;
 
     const inputType = addon.type === 'linear' ? 'number' : 'number';
-    const inputStep = addon.type === 'linear' ? 0.01 : 1;
+    const inputStep = addon.type === 'linear' ? '0.01' : '1';
     const inputMin = addon.type === 'linear' ? 0 : 1;
     const inputValue = addon.type === 'linear' ? linearFeet : value;
 
@@ -1977,7 +1977,7 @@ async function loadSavedQuote(quote) {
                 "Box Construction": '',
                 "Box Material": '',
                 "Door Material": '',
-                "Door Style": '',
+                doorStyle: '',
                 "Finish": '',
                 "Interior Finish": '',
                 drawerBox: '',
@@ -2011,7 +2011,7 @@ async function loadSavedQuote(quote) {
                 const addon = ADDONS[addonData.key];
                 if (addon) {
                     // Add add-on to the ROOM'S container
-                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer); // Pass container
+                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer);
                 }
             });
         }
