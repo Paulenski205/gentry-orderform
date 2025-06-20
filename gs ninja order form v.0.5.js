@@ -355,10 +355,12 @@ function showNotification(message, type) {
 
 // CabinetCalculator Class and Cost Calculations
 
+// CabinetCalculator Class and Cost Calculations
 class CabinetCalculator {
-    constructor(linearFootage) {
+    constructor(linearFootage, selections) { // Add selections to constructor
         this.linearFootage = linearFootage;
-        
+        this.selections = selections; // Store selections
+
         // Bind methods to preserve 'this' context
         this.boxConstruction = this.boxConstruction.bind(this);
         this.boxMaterial = this.boxMaterial.bind(this);
@@ -479,7 +481,9 @@ class CabinetCalculator {
     }
 
     drawerBox(option) {
-        const boxConstructionCost = this.boxConstruction(document.getElementById('box-construction').value);
+        // CORRECTED: Get boxConstruction option from this.selections
+        const boxConstructionOption = this.selections["Box Construction"];
+        const boxConstructionCost = this.costs["Box Construction"][boxConstructionOption] * this.linearFootage;
         return this.costs["Drawer Box"][option] * boxConstructionCost;
     }
 
@@ -496,20 +500,20 @@ class CabinetCalculator {
     }
 
     // Add debug logging to your calculateTotalCost method
-calculateTotalCost(selections) {
-    console.log('Calculating total cost with selections:', selections);
-    let totalCost = 0;
-    for (let component in selections) {
-        if (this.components[component] && selections[component]) {
-            console.log(`Calculating cost for ${component}: ${selections[component]}`);
-            let cost = this.components[component](selections[component]);
-            console.log(`Cost for ${component}: ${cost}`);
-            totalCost += cost;
+    calculateTotalCost(selections) { // This selections parameter is the same as this.selections
+        console.log('Calculating total cost with selections:', selections);
+        let totalCost = 0;
+        for (let component in selections) {
+            if (this.components[component] && selections[component]) {
+                console.log(`Calculating cost for ${component}: ${selections[component]}`);
+                let cost = this.components[component](selections[component]);
+                console.log(`Cost for ${component}: ${cost}`);
+                totalCost += cost;
+            }
         }
+        console.log('Total cost:', totalCost);
+        return totalCost;
     }
-    console.log('Total cost:', totalCost);
-    return totalCost;
-  }
 }
 
 // Cost Breakdown Update Function
@@ -547,9 +551,9 @@ function updateCostBreakdown() {
             console.log('Room selections:', selections);
 
             // Calculate room cost
-            const calculator = new CabinetCalculator(totalLinearFoot);
-            let roomSubtotal = calculator.calculateTotalCost(selections);
-            console.log('Room subtotal:', roomSubtotal);
+            const calculator = new CabinetCalculator(totalLinearFoot, selections); // Pass selections to constructor
+let roomSubtotal = calculator.calculateTotalCost(selections);
+console.log('Room subtotal:', roomSubtotal);
 
             // Add-ons for this room
             const roomAddons = getRoomAddons(roomId);
@@ -2065,14 +2069,26 @@ function loadRoomData(roomId) {
             "Drawer Style": '',
             "Hardware": '',
             "Edgeband": ''
-        }
+        },
+        addons: [] // Ensure addons is initialized
     };
 
-    const roomData = savedData ? JSON.parse(savedData) : defaultRoomData;
+    // Parse savedData, or use defaultRoomData if savedData is null/invalid
+    let roomData;
+    try {
+        roomData = savedData ? JSON.parse(savedData) : defaultRoomData;
+        // Ensure roomData has all expected top-level properties
+        roomData.dimensions = roomData.dimensions || defaultRoomData.dimensions;
+        roomData.options = roomData.options || defaultRoomData.options;
+        roomData.addons = roomData.addons || defaultRoomData.addons;
+    } catch (e) {
+        console.error(`Error parsing saved data for ${roomId}:`, e);
+        roomData = defaultRoomData; // Fallback to default on parse error
+    }
     console.log('Using room data:', roomData);
 
     // Set dimensions
-    if (roomData.dimensions) {
+    if (roomData.dimensions) { // This check is now safer
         // Set base walls
         if (roomData.dimensions.base) {
             document.getElementById('base-wall-a').value = roomData.dimensions.base.wallA || '';
@@ -2096,7 +2112,7 @@ function loadRoomData(roomId) {
     });
 
     // Set options
-    setSelectedOptions(roomData.options || {});
+    setSelectedOptions(roomData.options || {}); // Ensure options is an object
 
     // Update room name
     const roomIndex = parseInt(roomId.replace('room-', '')) - 1;
