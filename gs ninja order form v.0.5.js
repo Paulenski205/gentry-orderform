@@ -1981,43 +1981,46 @@ async function loadSavedQuote(quote) {
                 "Box Construction": '',
                 "Box Material": '',
                 "Door Material": '',
-                doorStyle: '',
+                "Door Style": '',
                 "Finish": '',
                 "Interior Finish": '',
-                drawerBox: '',
-                drawerStyle: '',
-                hardware: '',
-                edgeband: ''
+                "Drawer Box": '',
+                "Drawer Style": '',
+                "Hardware": '',
+                "Edgeband": ''
             },
-            addons: []
+            addons: [] // Initialize addons array
         };
 
         // Merge the saved data into roomData
         Object.assign(roomData, room.data || {});
 
         // Create a container for this room's add-ons
-        let roomAddonsContainer = document.getElementById(`room-addons-${roomId}`);
-        if (!roomAddonsContainer) {
-            roomAddonsContainer = document.createElement('div');
-            roomAddonsContainer.id = `room-addons-${roomId}`;
-            roomAddonsContainer.className = 'active-addons';
-            
-            // Append the container to the addon-section
-            const addonSection = document.querySelector('.addon-section');
-            if (addonSection) {
-                addonSection.appendChild(roomAddonsContainer);
-            }
+        let roomAddonsContainer = document.createElement('div');
+        roomAddonsContainer.id = `room-addons-${roomId}`;
+        roomAddonsContainer.className = 'active-addons';
+        roomAddonsContainer.style.display = roomId === currentRoomId ? 'block' : 'none';
+        
+        // Append the container to the addon-section
+        const addonSection = document.querySelector('.addon-section');
+        if (addonSection) {
+            addonSection.appendChild(roomAddonsContainer);
         }
 
         // Load add-ons for this room
         if (Array.isArray(roomData.addons)) {
+            console.log(`Loading add-ons for room ${roomId}:`, roomData.addons);
             roomData.addons.forEach(addonData => {
                 const addon = ADDONS[addonData.key];
                 if (addon) {
                     // Add add-on to the ROOM'S container
                     addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer);
+                } else {
+                    console.warn(`Addon with key ${addonData.key} not found in ADDONS`);
                 }
             });
+        } else {
+            console.log(`No add-ons found for room ${roomId}`);
         }
 
         localStorage.setItem(roomId, JSON.stringify(roomData));
