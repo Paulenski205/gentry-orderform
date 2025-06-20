@@ -575,7 +575,7 @@ function updateCostBreakdown() {
             const selectionItem = document.createElement('div');
             selectionItem.className = 'cost-line selection-detail';
             selectionItem.innerHTML = `
-                <span>-${component}:</span>
+                <span>- ${component}:</span>
                 <span>${value}</span>
             `;
             roomSection.appendChild(selectionItem);
