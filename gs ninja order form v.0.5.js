@@ -587,14 +587,14 @@ console.log('Room subtotal:', roomSubtotal);
     }
 
             roomAddons.forEach(addonData => {
-                const addonItem = document.createElement('div');
-                addonItem.className = 'cost-line selection-detail';
-                addonItem.innerHTML = `
-                    <span>- ${addonData.name}:</span>
-                    <span>${addonData.value} ${addonData.unit}</span>
-                `;
-                roomSection.appendChild(addonItem); // Append directly to roomSection
-            });
+    const addonItem = document.createElement('div');
+    addonItem.className = 'cost-line selection-detail';
+    addonItem.innerHTML = `
+        <span>- ${addonData.name}:</span>
+        <span>${addonData.value} ${addonData.unit} (${formatMoney(addonData.price)})</span>
+    `;
+    roomSection.appendChild(addonItem);
+});
 
             costBreakdownList.appendChild(roomSection);
 
@@ -855,7 +855,8 @@ document.getElementById('room-selector').addEventListener('change', function(e) 
     console.log('Switching rooms:', { from: previousRoom, to: newRoom });
     
     // Save current room data with current form state
-    saveCurrentRoomData(previousRoom); // Explicitly save the previous room data
+    const savedData = saveCurrentRoomData(previousRoom); // Explicitly save the previous room data
+    console.log('Saved data for previous room:', savedData);
     
     // Update current room tracker
     currentRoomId = newRoom;
@@ -863,7 +864,6 @@ document.getElementById('room-selector').addEventListener('change', function(e) 
     // Load new room data
     loadRoomData(newRoom);
 });
-
 
 document.getElementById('manage-rooms-button').onclick = function() {
     updateRoomList();
@@ -921,7 +921,9 @@ function calculateLinearFootage(dimensions) {
 function saveCurrentRoomData(roomId = currentRoomId) {
     console.log('Saving data for:', roomId);
 
+    // Get add-ons for this room
     const roomAddons = getRoomAddons(roomId);
+    console.log('Room add-ons to save:', roomAddons);
 
     const roomData = {
         dimensions: {
@@ -944,7 +946,7 @@ function saveCurrentRoomData(roomId = currentRoomId) {
             value: addon.value,
             linearFeet: addon.type === 'linear' ? addon.value : undefined
         }))
-    }; // roomData object is now complete
+    };
 
     console.log('Room data to save:', roomData);
 
@@ -957,7 +959,6 @@ function saveCurrentRoomData(roomId = currentRoomId) {
 
     return roomData;
 }
-
 
 function setWallDimensions(section, dimensions) {
     Object.entries(dimensions).forEach(([wall, value]) => {
@@ -1175,8 +1176,10 @@ function setSelectedOptions(options = {}) {
     if (options) {
         Object.entries(options).forEach(([key, value]) => {
             if (value && value !== '-') {
-                const elementId = optionMapping[key] || key;
+                // Convert keys like "Box Construction" to "box-construction"
+                const elementId = key.toLowerCase().replace(/\s+/g, '-');
                 const element = document.getElementById(elementId);
+                
                 if (element) {
                     if (element.tagName === 'SELECT') {
                         // Check if the value is a valid option for select elements
@@ -1192,7 +1195,7 @@ function setSelectedOptions(options = {}) {
                         console.log(`Set ${elementId} to ${value}`);
                     }
                 } else {
-                    console.warn(`Element with ID "${elementId}" not found.`);
+                    console.warn(`Element with ID "${elementId}" not found for key "${key}".`);
                 }
             }
         });
@@ -2001,20 +2004,27 @@ async function loadSavedQuote(quote) {
         }
 
         // Load add-ons for this room
-        if (Array.isArray(roomData.addons)) {
-            console.log(`Loading add-ons for room ${roomId}:`, roomData.addons);
-            roomData.addons.forEach(addonData => {
-                const addon = ADDONS[addonData.key];
-                if (addon) {
-                    // Add add-on to the ROOM'S container
-                    addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer);
-                } else {
-                    console.warn(`Addon with key ${addonData.key} not found in ADDONS`);
-                }
-            });
-        } else {
-            console.log(`No add-ons found for room ${roomId}`);
+        // Load add-ons for this room
+if (Array.isArray(roomData.addons) && roomData.addons.length > 0) {
+    console.log(`Loading add-ons for room ${roomId}:`, roomData.addons);
+    roomData.addons.forEach(addonData => {
+        if (!addonData.key) {
+            console.warn('Add-on missing key property:', addonData);
+            return;
         }
+        
+        const addon = ADDONS[addonData.key];
+        if (addon) {
+            console.log(`Adding add-on to room ${roomId}:`, addon.name, addonData.value);
+            // Add add-on to the ROOM'S container
+            addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer);
+        } else {
+            console.warn(`Addon with key ${addonData.key} not found in ADDONS`);
+        }
+    });
+} else {
+    console.log(`No add-ons found for room ${roomId}`);
+}
     });
 
     // 3. Update current room ID
