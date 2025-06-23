@@ -82,6 +82,13 @@ function showCreateQuote(isNewQuote = true) {
             createQuoteHeader.textContent = 'Create New Quote';
         }
 
+        // IMPORTANT: Clear the quote ID and project name
+        const quoteIdElement = document.getElementById('quote-id');
+        if (quoteIdElement) quoteIdElement.value = '';
+        
+        const projectNameElement = document.getElementById('project-name');
+        if (projectNameElement) projectNameElement.value = '';
+
         // Clear all room data from localStorage
         for (let i = 1; i <= 10; i++) {
             localStorage.removeItem(`room-${i}`);
@@ -111,6 +118,15 @@ function showCreateQuote(isNewQuote = true) {
         document.getElementById('installation-type').selectedIndex = 0;
         document.getElementById('installation-surcharge').value = '0.00';
         document.getElementById('discount').value = '0.00';
+
+        // Clear all add-on containers
+        document.querySelectorAll('[id^="room-addons-"]').forEach(container => {
+            container.remove();
+        });
+        const activeAddons = document.getElementById('active-addons');
+        if (activeAddons) {
+            activeAddons.innerHTML = '';
+        }
 
         // Initialize room selector
         initializeRoomSelector();
@@ -1634,20 +1650,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Define modal-related functions on window object
     window.saveQuote = function() {
-        const existingQuoteId = document.getElementById('quote-id').value;
-        const existingProjectName = document.getElementById('project-name').value;
+    const existingQuoteId = document.getElementById('quote-id').value;
+    const existingProjectName = document.getElementById('project-name').value;
 
-        if (existingQuoteId && existingProjectName) {
-            if (confirm(`Overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
-                confirmSaveQuote(existingProjectName);
-            }
-        } else {
-            const modal = document.getElementById('saveQuoteModal');
-            if (modal) {
-                modal.style.display = 'block';
-            }
+    if (existingQuoteId && existingProjectName) {
+        if (confirm(`Overwrite quote "${existingProjectName}" (${existingQuoteId})?`)) {
+            confirmSaveQuote(existingProjectName);
         }
-    };
+    } else {
+        // This is a new quote
+        const modal = document.getElementById('saveQuoteModal');
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    }
+};
 
     window.cancelSaveQuote = function() {
         const modal = document.getElementById('saveQuoteModal');
@@ -1941,10 +1958,10 @@ async function loadSavedQuote(quote) {
     rooms = quote.rooms.map(room => room.name);
     localStorage.setItem('rooms', JSON.stringify(rooms));
 
-    // Clear existing add-ons (IMPORTANT!)
+    // Clear existing add-ons
     const activeAddons = document.getElementById('active-addons');
     if (activeAddons) {
-        activeAddons.innerHTML = ''; // Clear existing add-ons
+        activeAddons.innerHTML = '';
     }
 
     // Remove any existing room-specific add-on containers
@@ -1952,7 +1969,7 @@ async function loadSavedQuote(quote) {
         container.remove();
     });
 
-    // 2. Process each room and its data/add-ons
+    // 2. Process each room and its data
     quote.rooms.forEach((room, index) => {
         const roomId = `room-${index + 1}`;
         console.log('Processing room:', room);
@@ -2002,35 +2019,43 @@ async function loadSavedQuote(quote) {
         if (addonSection) {
             addonSection.appendChild(roomAddonsContainer);
         }
+    });
 
-        // Load add-ons for this room
-        // Load add-ons for this room
-if (Array.isArray(roomData.addons) && roomData.addons.length > 0) {
-    console.log(`Loading add-ons for room ${roomId}:`, roomData.addons);
-    roomData.addons.forEach(addonData => {
-        if (!addonData.key) {
-            console.warn('Add-on missing key property:', addonData);
-            return;
-        }
+    // 3. Process quote-level add-ons and distribute to rooms
+    // This is the key change - handling the quote-level add-ons
+    if (Array.isArray(quote.addons) && quote.addons.length > 0) {
+        console.log('Processing quote-level add-ons:', quote.addons);
         
-        const addon = ADDONS[addonData.key];
-        if (addon) {
-            console.log(`Adding add-on to room ${roomId}:`, addon.name, addonData.value);
-            // Add add-on to the ROOM'S container
-            addAddonToRoom(roomId, addon, addonData.value, addonData.linearFeet, roomAddonsContainer);
-        } else {
-            console.warn(`Addon with key ${addonData.key} not found in ADDONS`);
+        // For simplicity, assign all add-ons to the first room
+        // You may need a more sophisticated approach if add-ons should be assigned to specific rooms
+        const firstRoomId = 'room-1';
+        const firstRoomData = JSON.parse(localStorage.getItem(firstRoomId) || '{}');
+        firstRoomData.addons = quote.addons.map(addon => ({
+            key: addon.key,
+            value: addon.value,
+            linearFeet: addon.type === 'linear' ? addon.value : undefined
+        }));
+        localStorage.setItem(firstRoomId, JSON.stringify(firstRoomData));
+        
+        // Add add-ons to the first room's container
+        const firstRoomContainer = document.getElementById(`room-addons-${firstRoomId}`);
+        if (firstRoomContainer) {
+            quote.addons.forEach(addonData => {
+                const addon = ADDONS[addonData.key];
+                if (addon) {
+                    console.log(`Adding add-on to room ${firstRoomId}:`, addon.name, addonData.value);
+                    addAddonToRoom(firstRoomId, addon, addonData.value, addonData.type === 'linear' ? addonData.value : undefined, firstRoomContainer);
+                } else {
+                    console.warn(`Addon with key ${addonData.key} not found in ADDONS`);
+                }
+            });
         }
-    });
-} else {
-    console.log(`No add-ons found for room ${roomId}`);
-}
-    });
+    }
 
-    // 3. Update current room ID
+    // 4. Update current room ID
     currentRoomId = 'room-1';
 
-    // 4. Update UI *after* saving room data
+    // 5. Update UI *after* saving room data
     document.getElementById('quote-id').value = quote.id;
     document.getElementById('tax-type').value = quote.taxType;
     document.getElementById('installation-type').value = quote.installationType;
@@ -2038,11 +2063,11 @@ if (Array.isArray(roomData.addons) && roomData.addons.length > 0) {
     document.getElementById('discount').value = quote.discount || '0.00';
     document.getElementById('project-name').value = quote.projectName;
 
-    // 5. Initialize room selector and load first room
+    // 6. Initialize room selector and load first room
     initializeRoomSelector();
     loadRoomData(currentRoomId);
 
-    // 6. Show the quote form *without* clearing data
+    // 7. Show the quote form *without* clearing data
     showCreateQuote(false);
 }
 
