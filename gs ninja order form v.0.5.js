@@ -855,26 +855,7 @@ document.getElementById('room-selector').addEventListener('change', function(e) 
     console.log('Switching rooms:', { from: previousRoom, to: newRoom });
     
     // Save current room data with current form state
-    const currentRoomData = {
-        dimensions: {
-            base: {
-                wallA: document.getElementById('base-wall-a').value || '',
-                wallB: document.getElementById('base-wall-b').value || '',
-                wallC: document.getElementById('base-wall-c').value || '',
-                wallD: document.getElementById('base-wall-d').value || ''
-            },
-            upper: {
-                wallA: document.getElementById('upper-wall-a').value || '',
-                wallB: document.getElementById('upper-wall-b').value || '',
-                wallC: document.getElementById('upper-wall-c').value || '',
-                wallD: document.getElementById('upper-wall-d').value || ''
-            }
-        },
-        options: getSelectedOptions()
-    };
-    
-    console.log('Saving current room state:', currentRoomData);
-    localStorage.setItem(previousRoom, JSON.stringify(currentRoomData));
+    saveCurrentRoomData(previousRoom); // Explicitly save the previous room data
     
     // Update current room tracker
     currentRoomId = newRoom;
@@ -882,6 +863,7 @@ document.getElementById('room-selector').addEventListener('change', function(e) 
     // Load new room data
     loadRoomData(newRoom);
 });
+
 
 document.getElementById('manage-rooms-button').onclick = function() {
     updateRoomList();
@@ -1993,7 +1975,18 @@ async function loadSavedQuote(quote) {
         };
 
         // Merge the saved data into roomData
-        Object.assign(roomData, room.data || {});
+        if (room.data) {
+            // Deep merge to ensure all properties are preserved
+            if (room.data.dimensions) {
+                if (room.data.dimensions.base) Object.assign(roomData.dimensions.base, room.data.dimensions.base);
+                if (room.data.dimensions.upper) Object.assign(roomData.dimensions.upper, room.data.dimensions.upper);
+            }
+            if (room.data.options) Object.assign(roomData.options, room.data.options);
+            if (room.data.addons) roomData.addons = [...room.data.addons];
+        }
+
+        // IMPORTANT: Save to localStorage immediately
+        localStorage.setItem(roomId, JSON.stringify(roomData));
 
         // Create a container for this room's add-ons
         let roomAddonsContainer = document.createElement('div');
@@ -2022,8 +2015,6 @@ async function loadSavedQuote(quote) {
         } else {
             console.log(`No add-ons found for room ${roomId}`);
         }
-
-        localStorage.setItem(roomId, JSON.stringify(roomData));
     });
 
     // 3. Update current room ID
@@ -2073,7 +2064,7 @@ function loadRoomData(roomId) {
             "Hardware": '',
             "Edgeband": ''
         },
-        addons: [] // Ensure addons is initialized
+        addons: []
     };
 
     // Parse savedData, or use defaultRoomData if savedData is null/invalid
@@ -2088,6 +2079,10 @@ function loadRoomData(roomId) {
         console.error(`Error parsing saved data for ${roomId}:`, e);
         roomData = defaultRoomData; // Fallback to default on parse error
     }
+    
+    // IMPORTANT: Save back to localStorage to ensure consistency
+    localStorage.setItem(roomId, JSON.stringify(roomData));
+
     console.log('Using room data:', roomData);
 
     // Set dimensions
