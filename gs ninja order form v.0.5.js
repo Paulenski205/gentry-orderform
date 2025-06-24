@@ -1472,7 +1472,15 @@ function getAddons() {
     rooms.forEach((roomName, index) => {  // Iterate through each room
         const roomId = `room-${index + 1}`;
         const roomAddons = getRoomAddons(roomId); // Get add-ons for this room
-        addons.push(...roomAddons); // Add the room's add-ons to the main array
+        
+        // Add room information to each add-on
+        const roomAddonsWithRoomInfo = roomAddons.map(addon => ({
+            ...addon,
+            roomId: roomId,
+            roomName: roomName
+        }));
+        
+        addons.push(...roomAddonsWithRoomInfo); // Add the room's add-ons to the main array
     });
     return addons;
 }
@@ -2022,35 +2030,82 @@ async function loadSavedQuote(quote) {
     });
 
     // 3. Process quote-level add-ons and distribute to rooms
-    // This is the key change - handling the quote-level add-ons
-    if (Array.isArray(quote.addons) && quote.addons.length > 0) {
-        console.log('Processing quote-level add-ons:', quote.addons);
+if (Array.isArray(quote.addons) && quote.addons.length > 0) {
+    console.log('Processing quote-level add-ons:', quote.addons);
+    
+    // Group add-ons by roomId
+    const addonsByRoom = {};
+    
+    quote.addons.forEach(addon => {
+        // If the add-on has a roomId, use it; otherwise default to room-1
+        const roomId = addon.roomId || 'room-1';
         
-        // For simplicity, assign all add-ons to the first room
-        // You may need a more sophisticated approach if add-ons should be assigned to specific rooms
-        const firstRoomId = 'room-1';
-        const firstRoomData = JSON.parse(localStorage.getItem(firstRoomId) || '{}');
-        firstRoomData.addons = quote.addons.map(addon => ({
+        if (!addonsByRoom[roomId]) {
+            addonsByRoom[roomId] = [];
+        }
+        addonsByRoom[roomId].push(addon);
+    });
+    
+    // For older quotes without roomId in add-ons, show a notification
+    if (quote.addons.some(addon => !addon.roomId)) {
+        console.warn('This quote has add-ons without room information. They will be assigned to Room 1.');
+        // Optionally show a notification to the user
+        showNotification('Some add-ons were assigned to Room 1 because they didn\'t have room information.', 'warning');
+    }
+    
+    // Process add-ons for each room
+    Object.entries(addonsByRoom).forEach(([roomId, roomAddons]) => {
+        // Get the room data from localStorage
+        const roomData = JSON.parse(localStorage.getItem(roomId) || '{}');
+        
+        // Update the room's add-ons
+        roomData.addons = roomAddons.map(addon => ({
             key: addon.key,
             value: addon.value,
             linearFeet: addon.type === 'linear' ? addon.value : undefined
         }));
-        localStorage.setItem(firstRoomId, JSON.stringify(firstRoomData));
         
-        // Add add-ons to the first room's container
-        const firstRoomContainer = document.getElementById(`room-addons-${firstRoomId}`);
-        if (firstRoomContainer) {
-            quote.addons.forEach(addonData => {
+        // Save back to localStorage
+        localStorage.setItem(roomId, JSON.stringify(roomData));
+        
+        // Add add-ons to the room's container
+        const roomContainer = document.getElementById(`room-addons-${roomId}`);
+        if (roomContainer) {
+            roomAddons.forEach(addonData => {
                 const addon = ADDONS[addonData.key];
                 if (addon) {
-                    console.log(`Adding add-on to room ${firstRoomId}:`, addon.name, addonData.value);
-                    addAddonToRoom(firstRoomId, addon, addonData.value, addonData.type === 'linear' ? addonData.value : undefined, firstRoomContainer);
+                    console.log(`Adding add-on to room ${roomId}:`, addon.name, addonData.value);
+                    addAddonToRoom(roomId, addon, addonData.value, 
+                                  addonData.type === 'linear' ? addonData.value : undefined, 
+                                  roomContainer);
                 } else {
                     console.warn(`Addon with key ${addonData.key} not found in ADDONS`);
                 }
             });
+        } else {
+            console.warn(`Container for room ${roomId} not found. Creating it.`);
+            // Create the container if it doesn't exist
+            const addonSection = document.querySelector('.addon-section');
+            if (addonSection) {
+                const newContainer = document.createElement('div');
+                newContainer.id = `room-addons-${roomId}`;
+                newContainer.className = 'active-addons';
+                newContainer.style.display = roomId === currentRoomId ? 'block' : 'none';
+                addonSection.appendChild(newContainer);
+                
+                // Now add the add-ons
+                roomAddons.forEach(addonData => {
+                    const addon = ADDONS[addonData.key];
+                    if (addon) {
+                        addAddonToRoom(roomId, addon, addonData.value, 
+                                      addonData.type === 'linear' ? addonData.value : undefined, 
+                                      newContainer);
+                    }
+                });
+            }
         }
-    }
+    });
+}
 
     // 4. Update current room ID
     currentRoomId = 'room-1';
