@@ -1932,7 +1932,7 @@ function calculateTotalInstallationCost() {
     return total;
 }
 
-// Frontend JavaScript
+// Frontend JavaScriptc
 async function loadQuote(quoteId) {
     try {
         const quote = await MessageSystem.sendMessage('getQuoteById', { quoteId });
