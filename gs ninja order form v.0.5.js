@@ -1265,7 +1265,7 @@ const ADDONS = {
         name: "Floating Shelves",
         price: 50.00,
         type: "linear",
-        unit: "per linear foot"
+        unit: "linear foot"
     },
     floatingShelvesLED: {
         name: "Floating Shelves + LED Lighting",
@@ -2117,6 +2117,12 @@ if (Array.isArray(quote.addons) && quote.addons.length > 0) {
     document.getElementById('installation-surcharge').value = quote.installationSurcharge || '0.00';
     document.getElementById('discount').value = quote.discount || '0.00';
     document.getElementById('project-name').value = quote.projectName;
+
+// NEW CODE: Update the header text to show the project name
+    const createQuoteHeader = document.querySelector('#create-quote-container h2');
+    if (createQuoteHeader && quote.projectName) {
+        createQuoteHeader.textContent = `Editing: ${quote.projectName}`;
+    }
 
     // 6. Initialize room selector and load first room
     initializeRoomSelector();
