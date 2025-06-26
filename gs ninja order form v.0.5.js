@@ -1748,145 +1748,350 @@ function exportToPDF() {
     const quoteId = document.getElementById('quote-id').value || 'NEW_QUOTE';
     const projectName = document.getElementById('project-name').value || 'Untitled';
     
+    // Set font styles
+    doc.setFont('helvetica', 'normal');
+    
+    // Create enhanced header section with company info
     // Add company logo
     const logoUrl = 'https://static.wixstatic.com/media/daaed2_67c14634bac74c9c937f25b28559d874~mv2.png/v1/crop/x_8,y_0,w_1800,h_1996/fill/w_109,h_122,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Gentry-Stinson-Logo.png';
-    
-    // Create header section
     doc.addImage(logoUrl, 'PNG', 15, 15, 30, 30);
-    doc.setFontSize(20);
+    
+    // Company name
+    doc.setFontSize(24);
+    doc.setTextColor(69, 160, 73); // #45a049
     doc.text('Gentry Stinson', 50, 25);
-    doc.setFontSize(12);
-    doc.text('Phoenix, Arizona', 50, 35);
+    
+    // Company address and contact
+    doc.setFontSize(10);
+    doc.setTextColor(102, 102, 102); // #666
+    doc.text('2539 E Rose Garden Ln', 50, 35);
+    doc.text('Phoenix, Arizona 85050', 50, 40);
+    doc.text('(480) 674-6702', 50, 45);
     
     // Add quote information
     doc.setFontSize(16);
+    doc.setTextColor(0, 0, 0); // Black
     doc.text('Cabinet Quote', 15, 60);
+    
+    // Quote details in a box
+    doc.setDrawColor(69, 160, 73); // #45a049
+    doc.setFillColor(249, 249, 249); // #f9f9f9
+    doc.roundedRect(15, 65, 180, 25, 3, 3, 'FD'); // x, y, width, height, radius, radius, style
+    
     doc.setFontSize(12);
-    doc.text(`Quote ID: ${quoteId}`, 15, 70);
-    doc.text(`Project: ${projectName}`, 15, 80);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 15, 90);
-
-    // Add room details
-    let yPosition = 110; // Adjusted starting position
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Quote ID: ${quoteId}`, 20, 75);
+    doc.text(`Project: ${projectName}`, 20, 82);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 89);
+    
+    // Add room details with enhanced styling
+    let yPosition = 105; // Starting position after header
+    
     rooms.forEach((roomName, index) => {
         const roomId = `room-${index + 1}`;
         const roomData = JSON.parse(localStorage.getItem(roomId)) || {};
         
-        // Room header
-        doc.setFontSize(14);
-        doc.text(roomName, 15, yPosition);
-        yPosition += 10;
+        // Check if we need a new page
+        if (yPosition > 250) {
+            doc.addPage();
+            yPosition = 20;
+        }
         
-        // Dimensions
+        // Room header with background
+        doc.setFillColor(69, 160, 73); // #45a049
+        doc.setDrawColor(69, 160, 73);
+        doc.roundedRect(15, yPosition, 180, 10, 2, 2, 'FD');
+        
+        doc.setTextColor(255, 255, 255); // White
+        doc.setFontSize(14);
+        doc.text(roomName, 20, yPosition + 7);
+        yPosition += 15;
+        
+        // Dimensions section
         if (roomData.dimensions) {
+            doc.setTextColor(69, 160, 73);
             doc.setFontSize(12);
             doc.text('Dimensions:', 20, yPosition);
-            yPosition += 10;
+            yPosition += 7;
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
             
             // Base walls
             if (roomData.dimensions.base) {
+                doc.text('Base Cabinets:', 25, yPosition);
+                yPosition += 5;
+                
+                let hasBaseWalls = false;
                 Object.entries(roomData.dimensions.base).forEach(([wall, value]) => {
                     if (value) {
-                        doc.text(`Base ${wall}: ${value}"`, 25, yPosition);
-                        yPosition += 7;
+                        hasBaseWalls = true;
+                        doc.text(`${wall}: ${value}"`, 35, yPosition);
+                        yPosition += 5;
                     }
                 });
+                
+                if (hasBaseWalls) {
+                    // Calculate linear footage
+                    const baseLinearFoot = Object.values(roomData.dimensions.base)
+                        .reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
+                    
+                    doc.setFillColor(245, 245, 245); // #f5f5f5
+                    doc.roundedRect(35, yPosition - 2, 70, 7, 1, 1, 'F');
+                    doc.text(`Linear Footage: ${baseLinearFoot.toFixed(2)} ft`, 40, yPosition + 3);
+                    yPosition += 10;
+                } else {
+                    yPosition += 3;
+                }
             }
             
             // Upper walls
             if (roomData.dimensions.upper) {
+                doc.text('Upper Cabinets:', 25, yPosition);
+                yPosition += 5;
+                
+                let hasUpperWalls = false;
                 Object.entries(roomData.dimensions.upper).forEach(([wall, value]) => {
                     if (value) {
-                        doc.text(`Upper ${wall}: ${value}"`, 25, yPosition);
-                        yPosition += 7;
+                        hasUpperWalls = true;
+                        doc.text(`${wall}: ${value}"`, 35, yPosition);
+                        yPosition += 5;
                     }
                 });
+                
+                if (hasUpperWalls) {
+                    // Calculate linear footage
+                    const upperLinearFoot = Object.values(roomData.dimensions.upper)
+                        .reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
+                    
+                    doc.setFillColor(245, 245, 245); // #f5f5f5
+                    doc.roundedRect(35, yPosition - 2, 70, 7, 1, 1, 'F');
+                    doc.text(`Linear Footage: ${upperLinearFoot.toFixed(2)} ft`, 40, yPosition + 3);
+                    yPosition += 10;
+                } else {
+                    yPosition += 3;
+                }
             }
         }
         
-        // Options
+        // Options section
         if (roomData.options) {
-            yPosition += 5;
-            doc.text('Options:', 20, yPosition);
-            yPosition += 10;
+            // Check if we need a new page
+            if (yPosition > 250) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            doc.setTextColor(69, 160, 73);
+            doc.setFontSize(12);
+            doc.text('Cabinet Options:', 20, yPosition);
+            yPosition += 7;
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            
+            // Create a grid layout for options
+            let optionsCount = 0;
+            const optionsPerRow = 2;
+            const optionWidth = 85;
+            const optionHeight = 12;
             
             Object.entries(roomData.options).forEach(([key, value]) => {
                 if (value && value !== '-') {
-                    doc.text(`${key}: ${value}`, 25, yPosition);
-                    yPosition += 7;
+                    const col = optionsCount % optionsPerRow;
+                    const xPos = 25 + (col * optionWidth);
+                    
+                    doc.setFillColor(249, 249, 249); // #f9f9f9
+                    doc.roundedRect(xPos - 3, yPosition - 3, optionWidth - 5, optionHeight, 1, 1, 'F');
+                    
+                    doc.setTextColor(102, 102, 102); // #666
+                    doc.text(`${key}:`, xPos, yPosition);
+                    
+                    doc.setTextColor(0, 0, 0);
+                    doc.setFontStyle('bold');
+                    doc.text(value, xPos, yPosition + 5);
+                    doc.setFontStyle('normal');
+                    
+                    optionsCount++;
+                    
+                    // Move to next row if needed
+                    if (col === optionsPerRow - 1) {
+                        yPosition += optionHeight;
+                    }
                 }
             });
+            
+            // Ensure we move to the next row if we ended in the middle of a row
+            if (optionsCount % optionsPerRow !== 0) {
+                yPosition += optionHeight;
+            } else if (optionsCount > 0) {
+                yPosition += 5; // Add some space after options
+            }
         }
         
-        yPosition += 10;
-        
-// Add-ons for this room
-    const roomAddons = getRoomAddons(roomId);
-    if (roomAddons.length > 0) {
-        yPosition += 5;
-        doc.text('Add-ons:', 20, yPosition);
-        yPosition += 10;
-        roomAddons.forEach(addon => {
-            doc.text(`- ${addon.name}: ${addon.value} ${addon.unit}`, 25, yPosition);
+        // Add-ons section - now styled like options
+        const roomAddons = getRoomAddons(roomId);
+        if (roomAddons.length > 0) {
+            // Check if we need a new page
+            if (yPosition > 250) {
+                doc.addPage();
+                yPosition = 20;
+            }
+            
+            doc.setTextColor(69, 160, 73);
+            doc.setFontSize(12);
+            doc.text('Add-ons:', 20, yPosition);
             yPosition += 7;
-        });
-    }
-
-    yPosition += 10;
-
-
-        // Add new page if needed
-        if (yPosition > 270) {
-            doc.addPage();
-            yPosition = 20;
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            
+            // Create a grid layout for add-ons similar to options
+            let addonsCount = 0;
+            const addonsPerRow = 2;
+            const addonWidth = 85;
+            const addonHeight = 12;
+            
+            roomAddons.forEach(addon => {
+                const col = addonsCount % addonsPerRow;
+                const xPos = 25 + (col * addonWidth);
+                
+                // Format the value with proper pluralization
+                const valueText = addon.type === 'linear' 
+                    ? `${addon.value} linear ${addon.value > 1 ? 'feet' : 'foot'}`
+                    : `${addon.value} quantity`;
+                
+                doc.setFillColor(249, 249, 249); // #f9f9f9
+                doc.roundedRect(xPos - 3, yPosition - 3, addonWidth - 5, addonHeight, 1, 1, 'F');
+                
+                doc.setTextColor(102, 102, 102); // #666
+                doc.text(`${addon.name}:`, xPos, yPosition);
+                
+                doc.setTextColor(0, 0, 0);
+                doc.setFontStyle('bold');
+                doc.text(valueText, xPos, yPosition + 5);
+                doc.setFontStyle('normal');
+                
+                addonsCount++;
+                
+                // Move to next row if needed
+                if (col === addonsPerRow - 1) {
+                    yPosition += addonHeight;
+                }
+            });
+            
+            // Ensure we move to the next row if we ended in the middle of a row
+            if (addonsCount % addonsPerRow !== 0) {
+                yPosition += addonHeight;
+            } else if (addonsCount > 0) {
+                yPosition += 5; // Add some space after add-ons
+            }
         }
+        
+        // Room subtotal
+        const baseWalls = roomData.dimensions?.base || {};
+        const upperWalls = roomData.dimensions?.upper || {};
+        const baseLinearFoot = Object.values(baseWalls).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
+        const upperLinearFoot = Object.values(upperWalls).reduce((sum, value) => sum + (parseFloat(value) || 0), 0) / 12;
+        const totalLinearFoot = baseLinearFoot + upperLinearFoot;
+        
+        const calculator = new CabinetCalculator(totalLinearFoot);
+        let roomSubtotal = calculator.calculateTotalCost(roomData?.options || {});
+        const roomAddonsCost = calculateRoomAddonsCost(roomId);
+        roomSubtotal += roomAddonsCost;
+        
+        doc.setFillColor(245, 245, 245); // #f5f5f5
+        doc.roundedRect(15, yPosition, 180, 10, 2, 2, 'F');
+        
+        doc.setTextColor(0, 0, 0);
+        doc.text('Room Subtotal:', 20, yPosition + 7);
+        
+        doc.setTextColor(69, 160, 73);
+        doc.setFontStyle('bold');
+        doc.text(formatMoney(roomSubtotal), 180, yPosition + 7, { align: 'right' });
+        doc.setFontStyle('normal');
+        
+        yPosition += 20; // Add space between rooms
     });
     
-    // Add cost breakdown
+    // Add cost breakdown on a new page
     doc.addPage();
     doc.setFontSize(16);
+    doc.setTextColor(69, 160, 73);
     doc.text('Cost Breakdown', 15, 20);
     
-    let costYPosition = 40;
+    let costYPosition = 35;
     
     // Project subtotal
     const projectSubtotal = calculateProjectSubtotal();
     doc.setFontSize(12);
-    doc.text(`Project Sub-Total: ${formatMoney(projectSubtotal)}`, 15, costYPosition);
-    costYPosition += 10;
+    doc.setTextColor(0, 0, 0);
+    
+    // Create a table-like structure for the cost breakdown
+    doc.setFillColor(249, 249, 249); // #f9f9f9
+    doc.roundedRect(15, costYPosition - 5, 180, 10, 1, 1, 'F');
+    
+    doc.text('Project Sub-Total:', 20, costYPosition);
+    doc.setFontStyle('bold');
+    doc.text(formatMoney(projectSubtotal), 180, costYPosition, { align: 'right' });
+    doc.setFontStyle('normal');
+    costYPosition += 15;
     
     // Tax
     const taxType = document.getElementById('tax-type').value;
     const taxRate = taxType === 'AZ' ? 0.086 : 0;
     const tax = projectSubtotal * taxRate;
-    doc.text(`Tax (${taxRate * 100}%): ${formatMoney(tax)}`, 15, costYPosition);
+    
+    doc.text(`Tax (${(taxRate * 100).toFixed(1)}%):`, 20, costYPosition);
+    doc.text(formatMoney(tax), 180, costYPosition, { align: 'right' });
     costYPosition += 10;
     
     // Installation
     const installationType = document.getElementById('installation-type').value;
     const installationSurcharge = parseFloat(document.getElementById('installation-surcharge').value) || 0;
     const installationCost = calculateTotalInstallationCost();
-    doc.text(`Installation: ${formatMoney(installationCost)}`, 15, costYPosition);
+    
+    doc.text(`Installation${installationSurcharge > 0 ? ' (+Surcharge)' : ''}:`, 20, costYPosition);
+    doc.text(formatMoney(installationCost), 180, costYPosition, { align: 'right' });
     costYPosition += 10;
     
     // Discount
     const discount = parseFloat(document.getElementById('discount').value) || 0;
     if (discount > 0) {
-        doc.text(`Discount: -${formatMoney(discount)}`, 15, costYPosition);
+        doc.text('Discount:', 20, costYPosition);
+        doc.text(`-${formatMoney(discount)}`, 180, costYPosition, { align: 'right' });
         costYPosition += 10;
     }
     
     // Total
     const total = projectSubtotal + tax + installationCost - discount;
+    
+    doc.setDrawColor(69, 160, 73); // #45a049
+    doc.setLineWidth(0.5);
+    doc.line(15, costYPosition - 2, 195, costYPosition - 2);
+    
     doc.setFontSize(14);
-    doc.text(`Total: ${formatMoney(total)}`, 15, costYPosition);
+    doc.setTextColor(69, 160, 73);
+    doc.text('Total:', 20, costYPosition + 8);
+    doc.setFontStyle('bold');
+    doc.text(formatMoney(total), 180, costYPosition + 8, { align: 'right' });
+    doc.setFontStyle('normal');
     
     // Add footer
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(10);
+        doc.setTextColor(102, 102, 102); // #666
         doc.text(`Page ${i} of ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+        
+        // Add a subtle footer line
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.1);
+        doc.line(15, doc.internal.pageSize.height - 15, doc.internal.pageSize.width - 15, doc.internal.pageSize.height - 15);
+        
+        // Add company name in footer
+        doc.text('Gentry Stinson Cabinetry', 15, doc.internal.pageSize.height - 10);
     }
     
     // Save the PDF with both quote ID and project name
