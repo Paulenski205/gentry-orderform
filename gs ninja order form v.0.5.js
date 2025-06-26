@@ -1702,6 +1702,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Could not find 'active-addons' element");
     }
 
+ // Add the PDF export event listener here
+    document.getElementById('export-pdf')?.addEventListener('click', exportToPDF);
+
     const clearDataButton = document.getElementById('clear-data-button');
     if (clearDataButton) {
         clearDataButton.addEventListener('click', showClearConfirmation);
