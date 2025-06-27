@@ -55,7 +55,7 @@ h1 {
 }
 
 .manage-rooms-button {
-    background-color: #45a049; /* Example red color */
+    background-color: #45a049;
     color: white;
     padding: 0.5rem 1rem;
     border: none;
@@ -64,7 +64,7 @@ h1 {
 }
 
 .clear-data-button {
-    background-color: #f44336; /* Example red color */
+    background-color: #f44336;
     color: white;
     padding: 0.5rem 1rem;
     border: none;
@@ -132,7 +132,7 @@ h1 {
 
 .wall-inputs {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
     margin-bottom: 2rem;
 }
@@ -151,9 +151,9 @@ h1 {
 }
 
 #base-linear-foot, #upper-linear-foot {
-    margin-left: 1rem;
     font-size: 0.9em;
     color: #666;
+    font-weight: normal;
 }
 
 /* Options and Form Groups */
@@ -245,10 +245,66 @@ h1 {
 
 /* Add-on Section */
 .addon-section {
-    margin-top: 2rem;
-    padding: 1rem;
+    margin: 20px 0;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
     background-color: #f9f9f9;
-    border-radius: 8px;
+}
+
+.addon-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.addon-selector select {
+    flex: 1;
+    padding: 8px;
+}
+
+.active-addons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Form builder add-on styling - FIXED */
+.active-addons .addon-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    flex-direction: row !important; /* Override the column direction */
+}
+
+.active-addons .addon-item input {
+    width: 60px;
+    padding: 4px;
+    text-align: center;
+}
+
+.active-addons .addon-item .addon-total {
+    margin-left: auto;
+    font-weight: bold;
+}
+
+.active-addons .addon-item .remove-addon {
+    color: #ff4444;
+    cursor: pointer;
+    padding: 4px 8px;
+    border: none;
+    background: none;
+    font-size: 16px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.active-addons .addon-item .remove-addon:hover {
+    color: #cc0000;
 }
 
 /* Action Buttons */
@@ -257,48 +313,6 @@ h1 {
     gap: 1rem;
     margin-top: 2rem;
 }
-
-.wall-inputs {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.wall-inputs .form-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.wall-inputs input {
-    width: 100px;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.measurements-section {
-    background-color: #f9f9f9;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-}
-
-.measurements-section h3 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-#base-linear-foot, #upper-linear-foot {
-    font-size: 0.9em;
-    color: #666;
-    font-weight: normal;
-}
-
 
 .save-button, .back-button {
     padding: 0.5rem 1rem;
@@ -347,6 +361,10 @@ h1 {
     margin-bottom: 20px;
 }
 
+.modal-header h2, .modal-header h3 {
+    margin: 0;
+}
+
 .close {
     color: #aaa;
     font-size: 28px;
@@ -364,39 +382,41 @@ h1 {
 }
 
 .room-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 10px;
-        padding: 5px;
-    }
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 5px;
+}
 
 .room-item input[type="text"] {
-        padding: 5px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
 
-    .room-item button {
-        padding: 5px 10px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
+.room-item button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
-    .edit-room {
-        background-color: #4CAF50;
-        color: white;
-    }
+.edit-room {
+    background-color: #4CAF50;
+    color: white;
+}
 
-    .save-room {
-        background-color: #2196F3;
-        color: white;
-    }
+.save-room {
+    background-color: #2196F3;
+    color: white;
+}
+
 .room-item button:disabled {
-        background-color: #cccccc;
-        cursor: not-allowed;
-    }
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
 .delete-room {
     color: #ff4444;
     cursor: pointer;
@@ -424,9 +444,16 @@ h1 {
 /* Confirmation Modal */
 .confirmation-buttons {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
+}
+
+.confirmation-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .save-and-exit {
@@ -441,6 +468,11 @@ h1 {
 
 .cancel {
     background-color: #666;
+    color: white;
+}
+
+.confirm-clear {
+    background-color: #f44336;
     color: white;
 }
 
@@ -461,38 +493,27 @@ h1 {
     color: #a94442;
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-    .quote-layout {
-        grid-template-columns: 2fr 1fr;
-    }
+/* Common styles for all numerical values and selections */
+.amount, 
+.selection-detail span:last-child {
+    font-family: Arial, sans-serif; 
+    min-width: 150px;
+    text-align: right;
 }
 
-@media (max-width: 992px) {
-    .options-form {
-        grid-template-columns: 1fr;
-    }
+.selection-detail {
+    font-size: 0.9em;
+    color: #666;
+    padding-left: 20px;
+    display: flex;
+    justify-content: space-between;
 }
 
-@media (max-width: 768px) {
-    .quote-layout {
-        grid-template-columns: 1fr;
-    }
-    
-    .cost-breakdown {
-        position: static;
-        margin-top: 2rem;
-    }
-    
-    .welcome-image {
-        width: 100%;
-    }
-    
-    .menu-button {
-        width: 100%;
-    }
+.selection-detail span:first-child {
+    font-family: Arial, sans-serif;
 }
 
+/* Additional Options Section */
 .additional-options-section {
     background-color: #f9f9f9;
     padding: 1rem;
@@ -532,94 +553,23 @@ h1 {
 .input-with-prefix input:focus {
     outline: none;
 }
-/* Common styles for all numerical values and selections */
-.amount, 
-.selection-detail span:last-child {
-    font-family: Arial, sans-serif; 
-    min-width: 150px;
-    text-align: right;
+
+/* Quote Item Styles */
+.quote-item {
+    background-color: #f9f9f9;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #ddd;
 }
 
-.selection-detail {
-    font-size: 0.9em;
-    color: #666;
-    padding-left: 20px;
-    display: flex;
-    justify-content: space-between;
-}
-
-.selection-detail span:first-child {
-
-    font-family: Arial, sans-serif; /* Keep regular font for labels */
-}
-
-.cost-line {
+.quote-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 0.5rem;
 }
-
-/* Style for the total amount */
-.total .amount {
-    background-color: #fff3cd;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-weight: bold;
-}
-
-/* Style for the subtotal line */
-.subtotal {
-    border-top: 2px solid #333;
-    margin-top: 1rem;
-    padding-top: 1rem;
-}
-/* Modal Styles */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgb(0,0,0); /* Fallback color */
-    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
-}
-
-.modal-content {
-    background-color: #fefefe;
-    margin: 15% auto; /* 15% from the top and centered */
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%; /* Could be more or less, depending on screen size */
-    max-width: 400px;
-    border-radius: 8px;
-}
-
-.confirmation-buttons {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 20px;
-}
-
-.confirmation-buttons button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.confirm-clear {
-    background-color: #f44336; /* Red */
-    color: white;
-}
-
-.cancel {
-    background-color: #666; /* Gray */
-    color: white;
-}
-/* Add to your existing CSS */
 
 .project-name {
     font-weight: bold;
@@ -633,14 +583,7 @@ h1 {
 .quote-details {
     margin: 0.5rem 0;
     font-size: 0.9em;
-}
-
-.quote-item {
-    background-color: #f9f9f9;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
 }
 
 #project-name {
@@ -651,119 +594,25 @@ h1 {
     border-radius: 4px;
     font-size: 1rem;
 }
-/* Add to your existing CSS */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.4);
+
+.quotes-list {
+    max-height: 400px;
+    overflow-y: auto;
 }
 
-.modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 500px;
-    border-radius: 8px;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.modal-header h2, .modal-header h3 {
-    margin: 0;
-}
-
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.quote-item {
-    background-color: #f9f9f9;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 4px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.quote-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-
-.confirmation-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.confirmation-buttons button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.save-button {
+.quote-item button {
     background-color: #4CAF50;
     color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
-.cancel {
-    background-color: #666;
-    color: white;
+.quote-item button:hover {
+    background-color: #45a049;
 }
- .project-name {
-        font-weight: bold;
-        font-size: 1.1em;
-    }
 
-    .quote-date {
-        color: #666;
-    }
-
-    .quote-details {
-        margin: 0.5rem 0;
-        font-size: 0.9em;
-    }
-
-    #project-name {
-        width: 100%;
-        padding: 0.5rem;
-        margin-bottom: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 1rem;
-    }
-
-    .quotes-list {
-        max-height: 400px;
-        overflow-y: auto;
-    }
 .save-button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
@@ -800,113 +649,6 @@ h1 {
     text-align: center;
     padding: 20px;
     color: #666;
-}
-
-.error {
-    color: #f44336;
-    padding: 20px;
-    text-align: center;
-}
-
-.quotes-list {
-    max-height: 400px;
-    overflow-y: auto;
-}
-
-.quote-item {
-    border: 1px solid #ddd;
-    margin-bottom: 10px;
-    padding: 15px;
-    border-radius: 4px;
-}
-
-.quote-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-}
-
-.project-name {
-    font-weight: bold;
-}
-
-.quote-date {
-    color: #666;
-}
-
-.quote-details {
-    margin-bottom: 10px;
-}
-
-.quote-item button {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.quote-item button:hover {
-    background-color: #45a049;
-}
-.addon-section {
-    margin: 20px 0;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.addon-selector {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.addon-selector select {
-    flex: 1;
-    padding: 8px;
-}
-
-.active-addons {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-/* Original add-ons styling for the form builder */
-.addon-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background: #f5f5f5;
-    border-radius: 4px;
-    margin-bottom: 10px;
-}
-
-.addon-item input {
-    width: 60px;
-    padding: 4px;
-    text-align: center;
-}
-
-.addon-item .addon-total {
-    margin-left: auto;
-    font-weight: bold;
-}
-
-.addon-item .remove-addon {
-    color: #ff4444;
-    cursor: pointer;
-    padding: 4px 8px;
-    border: none;
-    background: none;
-    font-size: 16px;
-}
-
-.addon-item .remove-addon:hover {
-    color: #cc0000;
 }
 
 /* PDF Export Preview Styles */
@@ -1024,13 +766,15 @@ h1 {
     color: #45a049;
 }
 
+/* PDF Export specific styles */
 .options-grid, .addons-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 15px;
 }
 
-.option-item, .addon-item {
+/* PDF Export specific styles - these won't affect the form builder */
+.addons-grid .addon-item {
     background-color: #f9f9f9;
     padding: 10px 15px;
     border-radius: 4px;
@@ -1038,13 +782,21 @@ h1 {
     flex-direction: column;
 }
 
-.option-label, .addon-label {
+.option-item {
+    background-color: #f9f9f9;
+    padding: 10px 15px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.option-label, .addons-grid .addon-label {
     color: #666;
     font-size: 0.9em;
     margin-bottom: 5px;
 }
 
-.option-value, .addon-value {
+.option-value, .addons-grid .addon-value {
     font-weight: bold;
 }
 
@@ -1125,7 +877,36 @@ h1 {
 }
 
 /* Responsive Adjustments */
+@media (max-width: 1200px) {
+    .quote-layout {
+        grid-template-columns: 2fr 1fr;
+    }
+}
+
+@media (max-width: 992px) {
+    .options-form {
+        grid-template-columns: 1fr;
+    }
+}
+
 @media (max-width: 768px) {
+    .quote-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .cost-breakdown {
+        position: static;
+        margin-top: 2rem;
+    }
+    
+    .welcome-image {
+        width: 100%;
+    }
+    
+    .menu-button {
+        width: 100%;
+    }
+    
     .company-header {
         flex-direction: column;
         text-align: center;
