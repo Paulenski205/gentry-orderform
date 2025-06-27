@@ -1908,9 +1908,10 @@ function exportToPDF() {
                     doc.text(`${key}:`, xPos, yPosition);
                     
                     doc.setTextColor(0, 0, 0);
-                    doc.setFontStyle('bold');
+                    // Use setFont instead of setFontStyle
+                    doc.setFont('helvetica', 'bold');
                     doc.text(value, xPos, yPosition + 5);
-                    doc.setFontStyle('normal');
+                    doc.setFont('helvetica', 'normal');
                     
                     optionsCount++;
                     
@@ -1968,9 +1969,10 @@ function exportToPDF() {
                 doc.text(`${addon.name}:`, xPos, yPosition);
                 
                 doc.setTextColor(0, 0, 0);
-                doc.setFontStyle('bold');
+                // Use setFont instead of setFontStyle
+                doc.setFont('helvetica', 'bold');
                 doc.text(valueText, xPos, yPosition + 5);
-                doc.setFontStyle('normal');
+                doc.setFont('helvetica', 'normal');
                 
                 addonsCount++;
                 
@@ -2007,9 +2009,10 @@ function exportToPDF() {
         doc.text('Room Subtotal:', 20, yPosition + 7);
         
         doc.setTextColor(69, 160, 73);
-        doc.setFontStyle('bold');
+        // Use setFont instead of setFontStyle
+        doc.setFont('helvetica', 'bold');
         doc.text(formatMoney(roomSubtotal), 180, yPosition + 7, { align: 'right' });
-        doc.setFontStyle('normal');
+        doc.setFont('helvetica', 'normal');
         
         yPosition += 20; // Add space between rooms
     });
@@ -2032,9 +2035,10 @@ function exportToPDF() {
     doc.roundedRect(15, costYPosition - 5, 180, 10, 1, 1, 'F');
     
     doc.text('Project Sub-Total:', 20, costYPosition);
-    doc.setFontStyle('bold');
+    // Use setFont instead of setFontStyle
+    doc.setFont('helvetica', 'bold');
     doc.text(formatMoney(projectSubtotal), 180, costYPosition, { align: 'right' });
-    doc.setFontStyle('normal');
+    doc.setFont('helvetica', 'normal');
     costYPosition += 15;
     
     // Tax
@@ -2073,9 +2077,10 @@ function exportToPDF() {
     doc.setFontSize(14);
     doc.setTextColor(69, 160, 73);
     doc.text('Total:', 20, costYPosition + 8);
-    doc.setFontStyle('bold');
+    // Use setFont instead of setFontStyle
+    doc.setFont('helvetica', 'bold');
     doc.text(formatMoney(total), 180, costYPosition + 8, { align: 'right' });
-    doc.setFontStyle('normal');
+    doc.setFont('helvetica', 'normal');
     
     // Add footer
     const pageCount = doc.internal.getNumberOfPages();
