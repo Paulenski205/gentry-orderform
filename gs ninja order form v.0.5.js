@@ -1776,7 +1776,7 @@ function exportToPDF() {
     // Quote details in a box
     doc.setDrawColor(69, 160, 73); // #45a049
     doc.setFillColor(249, 249, 249); // #f9f9f9
-    doc.roundedRect(15, 65, 180, 25, 3, 3, 'FD'); // x, y, width, height, radius, radius, style
+    doc.roundedRect(15, 65, 180, 30, 3, 3, 'FD'); // x, y, width, height, radius, radius, style
     
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
