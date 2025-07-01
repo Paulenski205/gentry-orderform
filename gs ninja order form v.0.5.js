@@ -418,7 +418,8 @@ class CabinetCalculator {
                 "Mahogany": 80,
                 "Cedar": 20,
                 "White Oak": 25,
-                "Melamine": 0
+                "Melamine": 0,
+"Laminate": 0
             },
             "Door Material": {
                 "Maple": 0,
@@ -429,15 +430,18 @@ class CabinetCalculator {
                 "Cedar": 20,
                 "White Oak": 25,
                 "Walnut": 80,
+"MDF": 0,
                 "Laminate": 0,
-                "Melamine": 0
+                "Melamine": 0,
+"No Drawer": 0
             },
             "Door Style": {
                 "Basic Shaker": 0,
                 "Flat Panel": 0,
                 "Shaker w/ Moulding": 10,
                 "Raised Shaker": 25,
-                "Flat Panel High Gloss Laminate": 75
+                "Flat Panel High Gloss Laminate": 75,
+"No Door Style": 0
             },
             "Finish": {
                 "Basic Stain": 0,
@@ -446,7 +450,8 @@ class CabinetCalculator {
                 "Color Match Stain": 30,
                 "Color Match Paint": 30,
                 "Distressed": 55,
-                "Laminate": 0
+                "Laminate": 0,
+"Melamine": 0
             },
             "Interior Finish": {
                 "White Birch": 0,
@@ -460,14 +465,16 @@ class CabinetCalculator {
             },
             "Drawer Box": {
                 "Dovetail": 0.05,
-                "Rabbet": 0.0
+                "Rabbet": 0.0,
+"No Drawer Box": 0.0
             },
             "Drawer Style": {
                 "Basic Shaker": 0,
                 "Flat Panel": 0,
                 "Shaker w/ Moulding": 0,
                 "Raised Shaker": 0,
-                "Flat Panel High Gloss Laminate": 0
+                "Flat Panel High Gloss Laminate": 0,
+"No Drawer Style": 0
             },
         "Hardware": { "None": 0 }, // Add Hardware cost
         "Edgeband": { "None": 0 } // Add Edgeband cost
