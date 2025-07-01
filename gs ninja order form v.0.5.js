@@ -417,7 +417,8 @@ class CabinetCalculator {
                 "Cherry": 50,
                 "Mahogany": 80,
                 "Cedar": 20,
-                "White Oak": 25
+                "White Oak": 25,
+                "Melamine": 0
             },
             "Door Material": {
                 "Maple": 0,
@@ -428,7 +429,8 @@ class CabinetCalculator {
                 "Cedar": 20,
                 "White Oak": 25,
                 "Walnut": 80,
-                "Laminate": 0
+                "Laminate": 0,
+                "Melamine": 0
             },
             "Door Style": {
                 "Basic Shaker": 0,
@@ -453,7 +455,8 @@ class CabinetCalculator {
                 "Glaze": 110,
                 "Distressed": 110,
                 "Laminate": 0,
-                "MDF": 0
+                "MDF": 0,
+                "Melamine": 0
             },
             "Drawer Box": {
                 "Dovetail": 0.05,
@@ -1278,6 +1281,12 @@ const ADDONS = {
         price: 300.00,
         type: "quantity",
         unit: "quantity"
+    },
+    endPanels: {
+        name: "End Panels",
+        price: 8.333,
+        type: "linear",
+        unit: "linear foot"
     }
 };
 
